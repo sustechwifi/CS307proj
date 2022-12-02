@@ -3,9 +3,10 @@ package service;
 import Interfaces.ICompanyManager;
 import POJO.LogInfo;
 import utils.SqlFactory;
-import utils.Wrapper;
+import utils.annotations.Aggregated;
+import utils.annotations.Multiple;
 
-import java.sql.SQLException;
+
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -19,32 +20,21 @@ public class CompanyManagerService implements ICompanyManager {
             (id) -> id.type() == LogInfo.StaffType.CompanyManager;
 
 
-    //@SuppressWarnings("all")
-    private double getTaxRate(String city, String itemClass, int type) {
-        String sql = "select u.tax , r.item_price from undertake u " +
-                "join record r on u.record_id = r.id " +
-                "where u.type = ? and r.item_class = ? and u.city_id = " +
-                "(select c.id from city c where c.name = ?)";
+    @Multiple(sql = """
+            select u.tax , r.item_price from undertake u
+            join record r on u.record_id = r.id
+            where u.type = ? and r.item_class = ? and u.city_id =
+            (select c.id from city c where c.name = ?)
+            """)
+    public double getTaxRate(String city, String itemClass, int type) {
         try {
-            return SqlFactory.handleMultipleResult(
-                    SqlFactory.handleQuery(sql, new Wrapper[]{
-                            new Wrapper<>(int.class, type),
-                            new Wrapper<>(String.class, itemClass),
-                            new Wrapper<>(String.class, city),
-                    }),
-                    (r) -> {
-                        try {
-                            return r.getDouble(1) / r.getLong(2);
-                        } catch (SQLException e) {
-                            throw new RuntimeException(e);
-                        }
-                    },
+            return SqlFactory.query(
+                    this.getClass().getMethod("getTaxRate", String.class, String.class, int.class),
+                    (r) -> r.getDouble(1) / r.getLong(2),
                     (res) -> res.stream()
-                            .collect(
-                                    Collectors.summarizingDouble(Double::doubleValue)
-                            )
-                            .getAverage()
-            );
+                            .collect(Collectors.summarizingDouble(Double::doubleValue))
+                            .getAverage(),
+                    type, itemClass, city);
         } catch (Exception e) {
             e.printStackTrace();
             return -1;
@@ -76,12 +66,7 @@ public class CompanyManagerService implements ICompanyManager {
                     "container_id = (select c.id from container c where c.code = ? and c.state = 0) " +
                     "where state = ? and item_name = ?";
             try {
-                SqlFactory.handleUpdate(sql, new Wrapper[]{
-                        new Wrapper<>(int.class, 4),
-                        new Wrapper<>(String.class, containerCode),
-                        new Wrapper<>(int.class, 3),
-                        new Wrapper<>(String.class, itemName),
-                });
+                SqlFactory.handleUpdate(sql, 4, containerCode, 3, itemName);
                 System.out.println("update successfully");
                 return true;
             } catch (Exception e) {
@@ -103,17 +88,8 @@ public class CompanyManagerService implements ICompanyManager {
             String sql2 = "update record set state = 5 " +
                     "where state = ? and container_id = (select c.id from container c where c.code = ? and c.state = 0)";
             try {
-                SqlFactory.handleUpdate(sql1,
-                        new Wrapper[]{
-                                new Wrapper<>(String.class,shipName),
-                                new Wrapper<>(String.class,containerCode)
-                });
-                SqlFactory.handleUpdate(sql2,
-                        new Wrapper[]{
-                                new Wrapper<>(int.class,4),
-                                new Wrapper<>(String.class,containerCode)
-                        }
-                );
+                SqlFactory.handleUpdate(sql1, shipName, containerCode);
+                SqlFactory.handleUpdate(sql2, 4, containerCode);
                 System.out.println("update successfully");
                 return true;
             } catch (Exception e) {
@@ -134,13 +110,8 @@ public class CompanyManagerService implements ICompanyManager {
                     "(select c.id from container c where c.ship_id = " +
                     "(select s.id from ship s where s.name = ?))";
             try {
-                SqlFactory.handleUpdate(sql1,new Wrapper[]{
-                        new Wrapper<>(String.class,shipName),
-                });
-                SqlFactory.handleUpdate(sql2,new Wrapper[]{
-                        new Wrapper<>(int.class, 5),
-                        new Wrapper<>(String.class, shipName)
-                });
+                SqlFactory.handleUpdate(sql1, shipName);
+                SqlFactory.handleUpdate(sql2, 5, shipName);
                 return true;
             } catch (Exception e) {
                 e.printStackTrace();
@@ -157,10 +128,7 @@ public class CompanyManagerService implements ICompanyManager {
             String sql = "update record set state = ? " +
                     "where item_name = ? and state = 7";
             try {
-                SqlFactory.handleUpdate(sql,new Wrapper[]{
-                        new Wrapper<>(int.class,8),
-                        new Wrapper<>(String.class,itemName),
-                });
+                SqlFactory.handleUpdate(sql, 8, itemName);
                 System.out.println("update successfully");
                 return true;
             } catch (Exception e) {
@@ -178,11 +146,7 @@ public class CompanyManagerService implements ICompanyManager {
             String sql = "update record set state = ? " +
                     "where item_name = ? and state = ?";
             try {
-                SqlFactory.handleUpdate(sql,new Wrapper[]{
-                        new Wrapper<>(int.class,9),
-                        new Wrapper<>(String.class,item),
-                        new Wrapper<>(int.class,8),
-                });
+                SqlFactory.handleUpdate(sql, 9, item, 8);
                 System.out.println("update successfully");
                 return true;
             } catch (Exception e) {

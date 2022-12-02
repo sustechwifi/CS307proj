@@ -3,51 +3,51 @@ package utils;
 import POJO.ContainerInfo;
 import POJO.ItemState;
 import POJO.LogInfo;
-import POJO.StaffInfo;
+import utils.annotations.Aggregated;
+import utils.annotations.Multiple;
 
+
+import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.function.BiFunction;
-import java.util.function.BiPredicate;
 import java.util.function.Function;
-import java.util.function.Predicate;
 
 public class SqlFactory {
 
-    private static <T> void handlePara(PreparedStatement p, Wrapper<T> w, int index) throws SQLException {
-        if (w.type().equals(int.class)) {
-            p.setInt(index, (int)w.value());
-        } else if (w.type().equals(String.class)) {
-            p.setString(index, (String) w.value());
-        } else if (w.type().equals(Long.class)) {
-            p.setLong(index, (long) w.value());
-        } else if (w.type().equals(double.class)){
-            p.setDouble(index, (double) w.value());
+    private static void handlePara(PreparedStatement p, Object w, int index) throws SQLException {
+        if (w instanceof Integer) {
+            p.setInt(index, (Integer) w);
+        } else if (w instanceof String) {
+            p.setString(index, (String) w);
+        } else if (w instanceof Long) {
+            p.setLong(index, (long) w);
+        } else if (w instanceof Double) {
+            p.setDouble(index, (double) w);
         }
     }
 
-    private static <I,O> O loadCondition(String sql,
-                                       Wrapper<I>[] conditions,
+    private static <O> O loadCondition(String sql,
+                                       Object[] conditions,
                                        BiFunction<Connection, PreparedStatement, O> f)
             throws SQLException {
-        Connection connection = JdbcUtil.getConnection();
+        Connection connection = JdbcUtil.connection;
         var p = connection.prepareStatement(sql);
-        if(conditions != null){
+        if (conditions != null) {
             for (int i = 0; i < conditions.length; i++) {
-                handlePara(p, conditions[i],  i + 1);
+                handlePara(p, conditions[i], i + 1);
             }
         }
         return f.apply(connection, p);
     }
 
-    public static <I> ResultSet handleQuery(String sql, Wrapper<I>[] conditions) throws SQLException {
+    public static SqlResult handleQuery(String sql, Object... conditions) throws SQLException {
         return loadCondition(sql, conditions, (con, p) -> {
             try {
-                return p.executeQuery();
+                return new SqlResult(p.executeQuery());
             } catch (SQLException e) {
                 e.printStackTrace();
                 return null;
@@ -55,7 +55,7 @@ public class SqlFactory {
         });
     }
 
-    public static <I> void handleUpdate(String sql, Wrapper[] conditions) throws SQLException {
+    public static void handleUpdate(String sql, Object... conditions) throws SQLException {
         loadCondition(sql, conditions, (con, p) -> {
             try {
                 p.executeUpdate();
@@ -68,9 +68,9 @@ public class SqlFactory {
         });
     }
 
-    public static <I, O> O handleMultipleResult(ResultSet resultSet,
-                                           Function<ResultSet, I> map,
-                                           Function<Collection<I>, O> transform)
+    public static <I, O> O handleMultipleResult(SqlResult resultSet,
+                                                Function<SqlResult, I> map,
+                                                Function<Collection<I>, O> transform)
             throws SQLException {
         var tmp = new ArrayList<I>();
         if (resultSet.next()) {
@@ -81,46 +81,47 @@ public class SqlFactory {
         return transform.apply(tmp);
     }
 
-    public static <O> O handleSingleResult(ResultSet resultSet, Function<ResultSet, O> map)
+    public static <O> O handleSingleResult(SqlResult resultSet, Function<SqlResult, O> map)
             throws SQLException {
         resultSet.next();
         return map.apply(resultSet);
     }
 
-    public static boolean checkCondition(Condition[] conditions){
-        for (var condition : conditions) {
-            if (!condition.input().equals(condition.expect())) {
-                return false;
-            }
-        }
-        return true;
-    }
 
-    public static  boolean checkItemExist(String item){
-        String sql = "select count(id) from record where item_name = ?";
+    public static <T, O> O query(Method method, Function<SqlResult, O> map,Object... args) {
         try {
-            return SqlFactory.handleSingleResult(
-                    SqlFactory.handleQuery(sql,
-                            new Wrapper[]{
-                                    new Wrapper<>(String.class,item)
-                            }
-                    ),
-                    r -> {
-                        try {
-                            return r.getInt(1) == 1;
-                        } catch (SQLException e) {
-                            e.printStackTrace();
-                            throw new RuntimeException(e);
-                        }
-                    }
-            );
-        } catch (SQLException e) {
+            if (method.isAnnotationPresent(Aggregated.class)) {
+                Aggregated init = method.getAnnotation(Aggregated.class);
+                String sql = init.sql();
+                return handleSingleResult(handleQuery(sql,args), map);
+            }else {
+                throw new RuntimeException("need annotation");
+            }
+        } catch (Exception e) {
             e.printStackTrace();
-            return true;
+            return null;
         }
     }
 
-    public static ItemState mapState(int state){
+    public static <T, I, O> O query(Method method,
+                                    Function<SqlResult, I> map,
+                                    Function<Collection<I>, O> transform,
+                                    Object... args) {
+        try {
+            if (method.isAnnotationPresent(Multiple.class)) {
+                Multiple init = method.getAnnotation(Multiple.class);
+                String sql = init.sql();
+                return handleMultipleResult(handleQuery(sql,args), map, transform);
+            }else {
+                throw new RuntimeException("need annotation");
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public static ItemState mapState(int state) {
         return switch (state) {
             case 1 -> ItemState.PickingUp;
             case 2 -> ItemState.ToExportTransporting;
@@ -139,7 +140,7 @@ public class SqlFactory {
         };
     }
 
-    public static ContainerInfo.Type mapContainerType(String type){
+    public static ContainerInfo.Type mapContainerType(String type) {
         return switch (type) {
             case "Dry Container" -> ContainerInfo.Type.Dry;
             case "Open Top Container" -> ContainerInfo.Type.OpenTop;
@@ -150,7 +151,7 @@ public class SqlFactory {
         };
     }
 
-    public static LogInfo.StaffType mapStaffType(int type){
+    public static LogInfo.StaffType mapStaffType(int type) {
         return switch (type) {
             case 1 -> LogInfo.StaffType.SustcManager;
             case 2 -> LogInfo.StaffType.CompanyManager;

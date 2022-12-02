@@ -3,9 +3,9 @@ package service;
 import Interfaces.ISustcManager;
 import POJO.*;
 import utils.SqlFactory;
-import utils.Wrapper;
+import utils.SqlResult;
+import utils.annotations.Aggregated;
 
-import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -23,15 +23,8 @@ public class SustcManagerService implements ISustcManager {
         String sql = String.format("select count(id) from %s", type);
         try {
             return SqlFactory.handleSingleResult(
-                    SqlFactory.handleQuery(sql, null),
-                    r -> {
-                        try {
-                            return r.getInt(1);
-                        } catch (Exception e) {
-                            e.printStackTrace();
-                            throw new RuntimeException(e);
-                        }
-                    }
+                    SqlFactory.handleQuery(sql, (Object) null),
+                    r -> r.getInt(1)
             );
         } catch (Exception e) {
             e.printStackTrace();
@@ -58,22 +51,16 @@ public class SustcManagerService implements ISustcManager {
     }
 
     @Override
+    @Aggregated(sql = "select count(id) from staff where type = 4")
     public int getCourierCount(LogInfo log) {
         if (identifyCheck.test(log)) {
-            String sql = "select count(id) from staff where type = 4";
             try {
-                return SqlFactory.handleSingleResult(
-                        SqlFactory.handleQuery(sql, null),
-                        r -> {
-                            try {
-                                return r.getInt(1);
-                            } catch (SQLException e) {
-                                e.printStackTrace();
-                                throw new RuntimeException(e);
-                            }
-                        }
-                );
-            } catch (SQLException e) {
+                return SqlFactory.query(
+                        this.getClass().getMethod("getCourierCount", LogInfo.class),
+                        r -> r.getInt(1),
+                        (Object) null
+                        );
+            } catch (Exception e) {
                 e.printStackTrace();
                 return -1;
             }
@@ -91,12 +78,10 @@ public class SustcManagerService implements ISustcManager {
         }
     }
 
-    private <O> O getRetrievalDelivery(String itemName, int type, String model, Function<ResultSet, O> func) throws SQLException {
+    private <O> O getRetrievalDelivery(String itemName, int type, String model, Function<SqlResult, O> func) throws SQLException {
         String sql = String.format(model, type);
         return SqlFactory.handleSingleResult(
-                SqlFactory.handleQuery(sql, new Wrapper[]{
-                        new Wrapper<>(String.class, itemName)
-                }),
+                SqlFactory.handleQuery(sql, itemName),
                 func
         );
     }
@@ -113,74 +98,38 @@ public class SustcManagerService implements ISustcManager {
 
             try {
                 ItemInfo info = SqlFactory.handleSingleResult(
-                        SqlFactory.handleQuery(sql, new Wrapper[]{
-                                new Wrapper<>(String.class, name)
-                        }),
-                        r -> {
-                            try {
-                                return new ItemInfo(
-                                        r.getString(1),
-                                        r.getString(2),
-                                        r.getDouble(3),
-                                        SqlFactory.mapState(r.getInt(4)),
-                                        null, null, null, null
-                                );
-                            } catch (SQLException e) {
-                                e.printStackTrace();
-                                throw new RuntimeException(e);
-                            }
-                        }
+                        SqlFactory.handleQuery(sql, name),
+                        r -> new ItemInfo(
+                                r.getString(1),
+                                r.getString(2),
+                                r.getDouble(3),
+                                SqlFactory.mapState(r.getInt(4)),
+                                null, null, null, null)
                 );
                 var retrieval = getRetrievalDelivery(name, 1, model,
-                        r -> {
-                            try {
-                                return new ItemInfo.RetrievalDeliveryInfo(
-                                        r.getString(1),
-                                        r.getString(2)
-                                );
-                            } catch (SQLException e) {
-                                e.printStackTrace();
-                                throw new RuntimeException(e);
-                            }
-                        });
+                        r -> new ItemInfo.RetrievalDeliveryInfo(
+                                r.getString(1),
+                                r.getString(2)
+                        ));
                 var export = getRetrievalDelivery(name, 3, model,
-                        r -> {
-                            try {
-                                return new ItemInfo.ImportExportInfo(
-                                        r.getString(1),
-                                        r.getString(2),
-                                        r.getDouble(3)
-                                );
-                            } catch (SQLException e) {
-                                e.printStackTrace();
-                                throw new RuntimeException(e);
-                            }
-                        });
+                        r -> new ItemInfo.ImportExportInfo(
+                                r.getString(1),
+                                r.getString(2),
+                                r.getDouble(3))
+
+                );
                 var $import = getRetrievalDelivery(name, 4, model,
-                        r -> {
-                            try {
-                                return new ItemInfo.ImportExportInfo(
-                                        r.getString(1),
-                                        r.getString(2),
-                                        r.getDouble(3)
-                                );
-                            } catch (SQLException e) {
-                                e.printStackTrace();
-                                throw new RuntimeException(e);
-                            }
-                        });
+                        r -> new ItemInfo.ImportExportInfo(
+                                r.getString(1),
+                                r.getString(2),
+                                r.getDouble(3))
+
+                );
                 var delivery = getRetrievalDelivery(name, 6, model,
-                        r -> {
-                            try {
-                                return new ItemInfo.RetrievalDeliveryInfo(
-                                        r.getString(1),
-                                        r.getString(2)
-                                );
-                            } catch (SQLException e) {
-                                e.printStackTrace();
-                                throw new RuntimeException(e);
-                            }
-                        });
+                        r -> new ItemInfo.RetrievalDeliveryInfo(
+                                r.getString(1),
+                                r.getString(2))
+                );
                 return new ItemInfo(info.name(), info.$class(), info.price(), info.state(), retrieval, delivery, $import, export);
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -196,20 +145,11 @@ public class SustcManagerService implements ISustcManager {
                     "where s.name = ?";
             try {
                 return SqlFactory.handleSingleResult(
-                        SqlFactory.handleQuery(sql, new Wrapper[]{
-                                new Wrapper<>(String.class, name)
-                        }),
-                        r -> {
-                            try {
-                                return new ShipInfo(
-                                        r.getString(1),
-                                        r.getString(2),
-                                        r.getInt(3) == 1);
-                            } catch (SQLException e) {
-                                e.printStackTrace();
-                                throw new RuntimeException(e);
-                            }
-                        }
+                        SqlFactory.handleQuery(sql, name),
+                        r -> new ShipInfo(r.getString(1),
+                                r.getString(2),
+                                r.getInt(3) == 1)
+
                 );
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -226,20 +166,12 @@ public class SustcManagerService implements ISustcManager {
             String sql = "select c.type,c.code,c.state from container c where c.code = ?";
             try {
                 return SqlFactory.handleSingleResult(
-                        SqlFactory.handleQuery(sql, new Wrapper[]{
-                                new Wrapper<>(String.class, code)
-                        }),
-                        r -> {
-                            try {
-                                return new ContainerInfo(
-                                        SqlFactory.mapContainerType(r.getString(1)),
-                                        r.getString(2),
-                                        r.getInt(3) == 1);
-                            } catch (SQLException e) {
-                                e.printStackTrace();
-                                throw new RuntimeException(e);
-                            }
-                        }
+                        SqlFactory.handleQuery(sql, code),
+                        r -> new ContainerInfo(
+                                SqlFactory.mapContainerType(r.getString(1)),
+                                r.getString(2),
+                                r.getInt(3) == 1)
+
                 );
             } catch (SQLException e) {
                 e.printStackTrace();
@@ -262,28 +194,19 @@ public class SustcManagerService implements ISustcManager {
                     where s.name = ?;""";
             try {
                 return SqlFactory.handleSingleResult(
-                        SqlFactory.handleQuery(sql, new Wrapper[]{
-                                new Wrapper<>(String.class, name)
-                        }),
-                        r -> {
-                            try {
-                                return new StaffInfo(
-                                        new LogInfo(
-                                                r.getString(2),
-                                                SqlFactory.mapStaffType(r.getInt(1)),
-                                                r.getString(8)
-                                        ),
+                        SqlFactory.handleQuery(sql, name),
+                        r -> new StaffInfo(
+                                new LogInfo(
                                         r.getString(2),
-                                        r.getString(3),
-                                        r.getInt(4) == 0,
-                                        r.getInt(5),
-                                        r.getString(6)
-                                );
-                            } catch (SQLException e) {
-                                e.printStackTrace();
-                                throw new RuntimeException(e);
-                            }
-                        }
+                                        SqlFactory.mapStaffType(r.getInt(1)),
+                                        r.getString(8)
+                                ),
+                                r.getString(2),
+                                r.getString(3),
+                                r.getInt(4) == 0,
+                                r.getInt(5),
+                                r.getString(6)
+                        )
                 );
             } catch (SQLException e) {
                 e.printStackTrace();

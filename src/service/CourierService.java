@@ -1,13 +1,13 @@
 package service;
 
 import Interfaces.ICourier;
-import POJO.CompanyInfo;
 import POJO.ItemInfo;
 import POJO.ItemState;
 import POJO.LogInfo;
-import utils.Condition;
+import utils.MethodFactory;
 import utils.SqlFactory;
-import utils.Wrapper;
+import utils.annotations.Aggregated;
+
 
 import java.sql.SQLException;
 import java.util.function.Predicate;
@@ -20,53 +20,34 @@ public class CourierService implements ICourier {
     private final Predicate<LogInfo> identifyCheck =
             (id) -> id.type() == LogInfo.StaffType.Courier;
 
-    private int getCompanyId(LogInfo log){
-        String sql = "select s.company_id from staff s where s.name = ?";
+    @Aggregated(sql = "select s.company_id from staff s where s.name = ?")
+    public int getCompanyId(LogInfo log){
         try {
-            return SqlFactory.handleSingleResult(
-                    SqlFactory.handleQuery(sql,
-                            new Wrapper[]{
-                                    new Wrapper<>(String.class,log.name())
-                            }
-                    ),
-                    r -> {
-                        try {
-                            return r.getInt(1);
-                        } catch (SQLException e) {
-                            e.printStackTrace();
-                            throw new RuntimeException(e);
-                        }
-                    }
-            );
-        } catch (SQLException e) {
+            return SqlFactory.query(
+                    this.getClass().getMethod("getCompanyId", LogInfo.class),
+                    r -> r.getInt(1),
+                    log.name());
+        } catch (Exception e) {
             e.printStackTrace();
             return -1;
         }
     }
 
+    private boolean checkItem(ItemInfo item){
+        return item.retrieval() == null && item.$import() == null && item.export() == null && item.delivery() == null
+                && item.state() == null && !MethodFactory.checkItemExist(item.name());
+    }
+
     @Override
     public boolean newItem(LogInfo log, ItemInfo item) {
         if (identifyCheck.test(log)){
-            if (!SqlFactory.checkCondition(new Condition[]{
-                    new Condition<>(item.retrieval(),null),
-                    new Condition<>(item.$import(),null),
-                    new Condition<>(item.export(),null),
-                    new Condition<>(item.delivery(),null),
-                    new Condition<>(item.state(),null),
-                    new Condition<>(SqlFactory.checkItemExist(item.name()),false)
-            })) {
+            if (!checkItem(item)) {
                 return false;
             }
             String sql = "insert into record(item_name, item_class, item_price, state, company_id) " +
                     "values (?,?,?,?,?)";
             try {
-                SqlFactory.handleUpdate(sql, new Wrapper[]{
-                        new Wrapper<>(String.class,item.name()),
-                        new Wrapper<>(String.class,item.$class()),
-                        new Wrapper<>(double.class,item.price()),
-                        new Wrapper<>(int.class,1),
-                        new Wrapper<>(int.class,getCompanyId(log)),
-                });
+                SqlFactory.handleUpdate(sql, item.name(), item.$class(), item.price(), 1, getCompanyId(log));
             } catch (SQLException e) {
                 e.printStackTrace();
             }
