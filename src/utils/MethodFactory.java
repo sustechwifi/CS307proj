@@ -1,6 +1,8 @@
 package utils;
 
+import POJO.LogInfo;
 import utils.annotations.Aggregated;
+
 
 /**
  * @author yjt
@@ -30,4 +32,32 @@ public class MethodFactory {
             return true;
         }
     }
+
+    @Aggregated(sql = "select city_id from staff where name = ? ")
+    public static int getCityId(LogInfo log) {
+        try {
+            return SqlFactory.query(
+                    clazz.getMethod("getCityId",LogInfo.class),
+                    r -> r.getInt(1),
+                    log.name()
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    @Aggregated(sql = "select s.company_id from staff s where s.name = ?")
+    public static int getCompanyId(LogInfo log){
+        try {
+            return SqlFactory.query(
+                    clazz.getMethod("getCompanyId", LogInfo.class),
+                    r -> r.getInt(1),
+                    log.name());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
 }

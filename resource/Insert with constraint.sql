@@ -1,14 +1,16 @@
-create table company(
+
+
+create table if not exists company(
     name varchar(30) unique not null,
     id serial primary key
 );
 
-create table city(
+create table if not exists city(
     name varchar(20) unique not null,
     id serial primary key
 );
 
-create table ship(
+create table if not exists ship(
     name varchar(20) unique not null,
     state int,
     --0 Docking  1 Shipping
@@ -19,7 +21,7 @@ create table ship(
     foreign key (city_id) references city(id)
 );
 
-create table container(
+create table if not exists container(
     code varchar(15) unique not null,
     type varchar(30) not null,
     state int,
@@ -32,7 +34,7 @@ create table container(
 );
 
 
-create table staff(
+create table if not exists staff(
     phone bigint,
     name varchar(20) unique not null,
     birth_year int,
@@ -53,7 +55,7 @@ create table staff(
     foreign key (city_id) references city(id)
 );
 
-create table record(
+create table if not exists record(
     item_name varchar(18) unique not null,
     item_class varchar(18) not null,
     item_price bigint not null,
@@ -71,7 +73,7 @@ create table record(
     foreign key (company_id) references company(id)
 );
 
-create table undertake(
+create table if not exists undertake(
     type int not null,
     --type = 1: Retrieval
     --type = 2: Export Transportation
@@ -93,5 +95,5 @@ create table undertake(
 
 
 -- select * from city;
--- drop table handle,city,company,container,courier,transit,ship,record;
+drop table undertake,city,company,container,staff,ship,record;
 -- truncate handle,city,company,container,courier,transit,ship,record cascade ;

@@ -59,7 +59,7 @@ public class SustcManagerService implements ISustcManager {
                         this.getClass().getMethod("getCourierCount", LogInfo.class),
                         r -> r.getInt(1),
                         (Object) null
-                        );
+                );
             } catch (Exception e) {
                 e.printStackTrace();
                 return -1;
@@ -139,19 +139,22 @@ public class SustcManagerService implements ISustcManager {
     }
 
     @Override
+    @Aggregated(sql = """
+            select s.name,c.name ,s.state from ship s
+            join company c on s.company_id = c.id
+            where s.name = ?
+            """)
     public ShipInfo getShipInfo(LogInfo log, String name) {
         if (identifyCheck.test(log)) {
-            String sql = "select s.name,c.name ,s.state from ship s join company c on s.company_id = c.id " +
-                    "where s.name = ?";
             try {
-                return SqlFactory.handleSingleResult(
-                        SqlFactory.handleQuery(sql, name),
+                return SqlFactory.query(
+                        this.getClass().getMethod("getShipInfo", LogInfo.class, String.class),
                         r -> new ShipInfo(r.getString(1),
                                 r.getString(2),
-                                r.getInt(3) == 1)
-
+                                r.getInt(3) == 1),
+                        name
                 );
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 return null;
             }
@@ -161,19 +164,19 @@ public class SustcManagerService implements ISustcManager {
     }
 
     @Override
+    @Aggregated(sql = "select c.type,c.code,c.state from container c where c.code = ?")
     public ContainerInfo getContainerInfo(LogInfo log, String code) {
         if (identifyCheck.test(log)) {
-            String sql = "select c.type,c.code,c.state from container c where c.code = ?";
             try {
-                return SqlFactory.handleSingleResult(
-                        SqlFactory.handleQuery(sql, code),
+                return SqlFactory.query(
+                        this.getClass().getMethod("getContainerInfo", LogInfo.class, String.class),
                         r -> new ContainerInfo(
                                 SqlFactory.mapContainerType(r.getString(1)),
                                 r.getString(2),
-                                r.getInt(3) == 1)
-
+                                r.getInt(3) == 1),
+                        code
                 );
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 return null;
             }
@@ -183,32 +186,33 @@ public class SustcManagerService implements ISustcManager {
     }
 
     @Override
+    @Aggregated(sql = """
+            select s.type , s.name , c.name,
+                   (select ci.name from city ci where ci.id = s.city_id)
+                 , s.gender, (2022 - s.birth_year), s.phone, s.password
+            from staff s
+                     join company c on s.company_id = c.id
+            where s.name = ?;
+            """)
     public StaffInfo getStaffInfo(LogInfo log, String name) {
         if (identifyCheck.test(log)) {
-            String sql = """
-                    select s.type , s.name , c.name,
-                           (select ci.name from city ci where ci.id = s.city_id)
-                         , s.gender, (2022 - s.birth_year), s.phone, s.password
-                    from staff s
-                             join company c on s.company_id = c.id
-                    where s.name = ?;""";
             try {
-                return SqlFactory.handleSingleResult(
-                        SqlFactory.handleQuery(sql, name),
+                return SqlFactory.query(
+                        this.getClass().getMethod("getStaffInfo", LogInfo.class, String.class),
                         r -> new StaffInfo(
                                 new LogInfo(
                                         r.getString(2),
                                         SqlFactory.mapStaffType(r.getInt(1)),
                                         r.getString(8)
                                 ),
-                                r.getString(2),
                                 r.getString(3),
-                                r.getInt(4) == 0,
-                                r.getInt(5),
-                                r.getString(6)
-                        )
+                                r.getString(4),
+                                r.getInt(5) == 0,
+                                r.getInt(6),
+                                r.getString(7)),
+                        name
                 );
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 return null;
             }

@@ -14,6 +14,6 @@ import java.lang.annotation.Target;
 public @interface SqlSupport {
     String DRIVER () default  "org.postgresql.Driver";
     String USERNAME () default "postgres";
-    String PASSWORD () default "20030118";
-    String URL () default "jdbc:postgresql://127.0.0.1:5432/sustc2?useUnicode=true&characterEncoding=utf8&rewriteBatchedStatement=true";
+    String PASSWORD () default "123456";
+    String URL () default "jdbc:postgresql://127.0.0.1:5432/postgres";
 }

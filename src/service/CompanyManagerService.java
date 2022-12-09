@@ -5,6 +5,7 @@ import POJO.LogInfo;
 import utils.SqlFactory;
 import utils.annotations.Aggregated;
 import utils.annotations.Multiple;
+import utils.annotations.Update;
 
 
 import java.util.function.Predicate;
@@ -26,7 +27,7 @@ public class CompanyManagerService implements ICompanyManager {
             where u.type = ? and r.item_class = ? and u.city_id =
             (select c.id from city c where c.name = ?)
             """)
-    public double getTaxRate(String city, String itemClass, int type) {
+    private double getTaxRate(String city, String itemClass, int type) {
         try {
             return SqlFactory.query(
                     this.getClass().getMethod("getTaxRate", String.class, String.class, int.class),
@@ -60,6 +61,7 @@ public class CompanyManagerService implements ICompanyManager {
     }
 
     @Override
+    @Update
     public boolean loadItemToContainer(LogInfo log, String itemName, String containerCode) {
         if (identifyCheck.test(log)) {
             String sql = "update record set state = ?," +
@@ -79,6 +81,7 @@ public class CompanyManagerService implements ICompanyManager {
     }
 
     @Override
+    @Update
     public boolean loadContainerToShip(LogInfo log, String shipName, String containerCode) {
         if (identifyCheck.test(log)) {
             String sql1 = "update container set ship_id = " +
@@ -102,6 +105,7 @@ public class CompanyManagerService implements ICompanyManager {
     }
 
     @Override
+    @Update
     public boolean shipStartSailing(LogInfo log, String shipName) {
         if (identifyCheck.test(log)) {
             String sql1 = "update ship set state = 1 where name = ?";
@@ -123,6 +127,7 @@ public class CompanyManagerService implements ICompanyManager {
     }
 
     @Override
+    @Update
     public boolean unloadItem(LogInfo log, String itemName) {
         if (identifyCheck.test(log)) {
             String sql = "update record set state = ? " +
@@ -141,6 +146,7 @@ public class CompanyManagerService implements ICompanyManager {
     }
 
     @Override
+    @Update
     public boolean itemWaitForChecking(LogInfo log, String item) {
         if (identifyCheck.test(log)) {
             String sql = "update record set state = ? " +

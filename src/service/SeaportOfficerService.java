@@ -4,6 +4,8 @@ import Interfaces.ISeaportOfficer;
 import POJO.LogInfo;
 import utils.MethodFactory;
 import utils.SqlFactory;
+import utils.annotations.Multiple;
+import utils.annotations.Update;
 
 import java.sql.SQLException;
 import java.util.function.Predicate;
@@ -19,33 +21,24 @@ public class SeaportOfficerService implements ISeaportOfficer {
     private final Predicate<LogInfo> identifyCheck =
             (id) -> id.type() == LogInfo.StaffType.SeaportOfficer;
 
-    private int getCityId(LogInfo log) {
-        String sql = "select city_id from staff where name = ? ";
-        try {
-            return SqlFactory.handleSingleResult(
-                    SqlFactory.handleQuery(sql, log.name()),
-                    r -> r.getInt(1)
-            );
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return -1;
-        }
-    }
 
     @Override
+    @Multiple(sql = """
+            select r.item_name from record r join undertake u on r.id = u.record_id
+            where (r.state = 3 and u.type = 3 and u.city_id = ?)
+               or (r.state = 8 and u.type = 4 and u.city_id = ?)
+            """)
     public String[] getAllItemsAtPort(LogInfo log) {
         if (identifyCheck.test(log)) {
-            String sql = "select r.item_name from record r join undertake u on r.id = u.record_id\n" +
-                    "where (r.state = 3 and u.type = 3 and u.city_id = ?)\n" +
-                    "   or (r.state = 8 and u.type = 4 and u.city_id = ?)";
-            int cityId = getCityId(log);
+            int cityId = MethodFactory.getCityId(log);
             try {
-                return SqlFactory.handleMultipleResult(
-                        SqlFactory.handleQuery(sql, cityId, cityId),
+                return SqlFactory.query(
+                        this.getClass().getMethod("getAllItemsAtPort", LogInfo.class),
                         r -> r.getString(1),
-                        arr -> arr.toArray(String[]::new)
+                        arr -> arr.toArray(String[]::new),
+                        cityId, cityId
                 );
-            } catch (SQLException e) {
+            } catch (Exception e) {
                 e.printStackTrace();
                 return null;
             }
@@ -55,6 +48,7 @@ public class SeaportOfficerService implements ISeaportOfficer {
     }
 
     @Override
+    @Update
     public boolean setItemCheckState(LogInfo log, String itemName, boolean success) {
         if (identifyCheck.test(log)) {
             if (MethodFactory.checkItemExist(itemName)) {
