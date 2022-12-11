@@ -57,4 +57,12 @@ public class SqlResult {
             return false;
         }
     }
+    public boolean getBoolean(int columnIndex){
+        try {
+            return r.getBoolean(columnIndex);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
 }

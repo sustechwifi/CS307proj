@@ -1,8 +1,8 @@
 package utils;
 
-import POJO.ContainerInfo;
-import POJO.ItemState;
-import POJO.LogInfo;
+import main.interfaces.ContainerInfo;
+import main.interfaces.ItemState;
+import main.interfaces.LogInfo;
 import utils.annotations.Aggregated;
 import utils.annotations.Multiple;
 
@@ -55,17 +55,22 @@ public class SqlFactory {
         });
     }
 
-    public static void handleUpdate(String sql, Object... conditions) throws SQLException {
-        loadCondition(sql, conditions, (con, p) -> {
-            try {
-                p.executeUpdate();
-                con.commit();
-                return 0;
-            } catch (SQLException e) {
-                e.printStackTrace();
-                return -1;
-            }
-        });
+    public static boolean handleUpdate(String sql, Object... conditions) {
+        try {
+            return loadCondition(sql, conditions, (con, p) -> {
+                try {
+                    p.executeUpdate();
+                    con.commit();
+                    return true;
+                } catch (SQLException e) {
+                    e.printStackTrace();
+                    return false;
+                }
+            });
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return false;
+        }
     }
 
     public static <I, O> O handleMultipleResult(SqlResult resultSet,
@@ -83,18 +88,21 @@ public class SqlFactory {
 
     public static <O> O handleSingleResult(SqlResult resultSet, Function<SqlResult, O> map)
             throws SQLException {
-        resultSet.next();
-        return map.apply(resultSet);
+        if (resultSet.next()) {
+            return map.apply(resultSet);
+        } else {
+            return null;
+        }
     }
 
 
-    public static <T, O> O query(Method method, Function<SqlResult, O> map,Object... args) {
+    public static <O> O query(Method method, Function<SqlResult, O> map, Object... args) {
         try {
             if (method.isAnnotationPresent(Aggregated.class)) {
                 Aggregated init = method.getAnnotation(Aggregated.class);
                 String sql = init.sql();
-                return handleSingleResult(handleQuery(sql,args), map);
-            }else {
+                return handleSingleResult(handleQuery(sql, args), map);
+            } else {
                 throw new RuntimeException("need annotation");
             }
         } catch (Exception e) {
@@ -103,7 +111,7 @@ public class SqlFactory {
         }
     }
 
-    public static <T, I, O> O query(Method method,
+    public static <I, O> O query(Method method,
                                     Function<SqlResult, I> map,
                                     Function<Collection<I>, O> transform,
                                     Object... args) {
@@ -111,8 +119,8 @@ public class SqlFactory {
             if (method.isAnnotationPresent(Multiple.class)) {
                 Multiple init = method.getAnnotation(Multiple.class);
                 String sql = init.sql();
-                return handleMultipleResult(handleQuery(sql,args), map, transform);
-            }else {
+                return handleMultipleResult(handleQuery(sql, args), map, transform);
+            } else {
                 throw new RuntimeException("need annotation");
             }
         } catch (Exception e) {
@@ -121,24 +129,57 @@ public class SqlFactory {
         }
     }
 
-    public static ItemState mapState(int state) {
+    public static ItemState mapState(Integer state) {
         return switch (state) {
             case 1 -> ItemState.PickingUp;
             case 2 -> ItemState.ToExportTransporting;
             case 3 -> ItemState.ExportChecking;
-            case 4 -> ItemState.ExportCheckFailed;
-            case 5 -> ItemState.PackingToContainer;
-            case 6 -> ItemState.WaitingForShipping;
-            case 7 -> ItemState.Shipping;
-            case 8 -> ItemState.UnpackingFromContainer;
-            case 9 -> ItemState.ImportChecking;
-            case 10 -> ItemState.ImportCheckFailed;
-            case 11 -> ItemState.FromImportTransporting;
-            case 12 -> ItemState.Delivering;
-            case 13 -> ItemState.Finish;
+            case 4 -> ItemState.PackingToContainer;
+            case 5 -> ItemState.WaitingForShipping;
+            case 6 -> ItemState.Shipping;
+            case 7 -> ItemState.UnpackingFromContainer;
+            case 8 -> ItemState.ImportChecking;
+            case 9 -> ItemState.FromImportTransporting;
+            case 10 -> ItemState.Delivering;
+            case 11 -> ItemState.Finish;
+            case 12 -> ItemState.ExportCheckFailed;
+            case 13 -> ItemState.ImportCheckFailed;
             default -> null;
         };
     }
+
+    public static Integer mapStateToInt(ItemState state) {
+        if (state == ItemState.PickingUp) {
+            return 1;
+        } else if (state == ItemState.ToExportTransporting) {
+            return 2;
+        } else if (state == ItemState.ExportChecking) {
+            return 3;
+        } else if (state == ItemState.PackingToContainer) {
+            return 4;
+        } else if (state == ItemState.WaitingForShipping) {
+            return 5;
+        } else if (state == ItemState.Shipping) {
+            return 6;
+        } else if (state == ItemState.UnpackingFromContainer) {
+            return 7;
+        } else if (state == ItemState.ImportChecking) {
+            return 8;
+        } else if (state == ItemState.FromImportTransporting) {
+            return 9;
+        } else if (state == ItemState.Delivering) {
+            return 10;
+        } else if (state == ItemState.Finish) {
+            return 11;
+        } else if (state == ItemState.ExportCheckFailed) {
+            return 12;
+        } else if (state == ItemState.ImportCheckFailed) {
+            return 13;
+        } else {
+            return null;
+        }
+    }
+
 
     public static ContainerInfo.Type mapContainerType(String type) {
         return switch (type) {

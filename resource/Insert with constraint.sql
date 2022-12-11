@@ -1,4 +1,6 @@
-
+-- select * from city;
+drop table undertake,city,company,container,staff,ship,record;
+-- truncate handle,city,company,container,courier,transit,ship,record cascade ;
 
 create table if not exists company(
     name varchar(30) unique not null,
@@ -64,8 +66,8 @@ create table if not exists record(
     --4 Packing to Container  5 Waiting for Shipping  6 Shipping
     --7 Unpacking for Container  8 Import Checking  9 From-Import Transporting
     --10 Delivering  11 Finish
-    --103 Export Check Fail
-    --108 Import Check Fail
+    --12 Export Check Fail
+    --18 Import Check Fail
     company_id int not null,
     container_id int,
     id serial primary key,
@@ -94,6 +96,3 @@ create table if not exists undertake(
 );
 
 
--- select * from city;
-drop table undertake,city,company,container,staff,ship,record;
--- truncate handle,city,company,container,courier,transit,ship,record cascade ;

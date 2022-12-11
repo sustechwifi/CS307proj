@@ -1,13 +1,12 @@
-import POJO.ItemInfo;
-import POJO.ItemState;
-import POJO.LogInfo;
-import service.CompanyManagerService;
-import service.DatabaseManipulationImpl;
-import service.SustcManagerService;
+
+import main.interfaces.ItemInfo;
+import main.interfaces.LogInfo;
+import service.DatabaseManipulation;
 import utils.JdbcUtil;
+import utils.MethodFactory;
 import utils.annotations.SqlSupport;
 
-import java.util.Arrays;
+import java.util.*;
 
 
 @SqlSupport(
@@ -17,7 +16,7 @@ import java.util.Arrays;
         URL = "jdbc:postgresql://127.0.0.1:5432/sustc2?useUnicode=true&characterEncoding=utf8&rewriteBatchedStatement=true"
 )
 public class Main {
-    private static final DatabaseManipulationImpl db = new DatabaseManipulationImpl();
+    private static final DatabaseManipulation db = new DatabaseManipulation();
 
     private static void testSustcManager(){
         var sustcManager = new LogInfo("xxx",LogInfo.StaffType.SustcManager,"123");
@@ -58,9 +57,20 @@ public class Main {
 
     public static void main(String[] args) {
         JdbcUtil.getConnection(Main.class);
-        testSustcManager();
-        testSeaportOfficer();
-        testCompanyManager();
-        testCourier();
+
+
+        Scanner input = new Scanner(System.in);
+        String s1 = input.nextLine();
+        String[] ss1 = s1.split(", ");
+        String s2 = input.nextLine();
+        String[] ss2 = s2.split(", ");
+        Set<String> flag = new HashSet<String>();
+        Collections.addAll(flag, ss1);
+        for (String s : ss2) {
+            if (!flag.contains(s)) {
+                System.out.println(s);
+            }
+        }
+
     }
 }

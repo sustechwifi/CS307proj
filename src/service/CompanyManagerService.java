@@ -1,9 +1,9 @@
 package service;
 
-import Interfaces.ICompanyManager;
-import POJO.LogInfo;
+import main.interfaces.ICompanyManager;
+import main.interfaces.LogInfo;
+import utils.MethodFactory;
 import utils.SqlFactory;
-import utils.annotations.Aggregated;
 import utils.annotations.Multiple;
 import utils.annotations.Update;
 
@@ -27,14 +27,14 @@ public class CompanyManagerService implements ICompanyManager {
             where u.type = ? and r.item_class = ? and u.city_id =
             (select c.id from city c where c.name = ?)
             """)
-    private double getTaxRate(String city, String itemClass, int type) {
+    public double getTaxRate(String city, String itemClass, int type) {
         try {
             return SqlFactory.query(
                     this.getClass().getMethod("getTaxRate", String.class, String.class, int.class),
                     (r) -> r.getDouble(1) / r.getLong(2),
-                    (res) -> res.stream()
+                    (res) -> Double.parseDouble(String.format("%.5f", res.stream()
                             .collect(Collectors.summarizingDouble(Double::doubleValue))
-                            .getAverage(),
+                            .getAverage())),
                     type, itemClass, city);
         } catch (Exception e) {
             e.printStackTrace();
@@ -64,17 +64,26 @@ public class CompanyManagerService implements ICompanyManager {
     @Update
     public boolean loadItemToContainer(LogInfo log, String itemName, String containerCode) {
         if (identifyCheck.test(log)) {
-            String sql = "update record set state = ?," +
-                    "container_id = (select c.id from container c where c.code = ? and c.state = 0) " +
-                    "where state = ? and item_name = ?";
-            try {
-                SqlFactory.handleUpdate(sql, 4, containerCode, 3, itemName);
-                System.out.println("update successfully");
-                return true;
-            } catch (Exception e) {
-                e.printStackTrace();
+            System.out.println("begin:");
+            Integer id = MethodFactory.getEmptyContainer(containerCode);
+            if (id == null){
                 return false;
             }
+            Integer state = MethodFactory.getItemState(itemName);
+            if (state == null || state != 4){
+                return false;
+            }
+            String sql1 = """
+                    update record set state = 5,
+                    container_id = ?
+                    where item_name = ?
+                    """;
+            String sql2 = """
+                    update container set state = 1
+                    where code = ?
+                    """;
+            return SqlFactory.handleUpdate(sql1, id,  itemName) &&
+                    SqlFactory.handleUpdate(sql2, containerCode);
         } else {
             return false;
         }
@@ -84,21 +93,21 @@ public class CompanyManagerService implements ICompanyManager {
     @Update
     public boolean loadContainerToShip(LogInfo log, String shipName, String containerCode) {
         if (identifyCheck.test(log)) {
-            String sql1 = "update container set ship_id = " +
-                    "(select s.id from ship s where s.name = ? and s.state = 0) " +
-                    "where code = ? and state = 0";
-
-            String sql2 = "update record set state = 5 " +
-                    "where state = ? and container_id = (select c.id from container c where c.code = ? and c.state = 0)";
-            try {
-                SqlFactory.handleUpdate(sql1, shipName, containerCode);
-                SqlFactory.handleUpdate(sql2, 4, containerCode);
-                System.out.println("update successfully");
-                return true;
-            } catch (Exception e) {
-                e.printStackTrace();
+            Integer shipState = MethodFactory.getShipState(shipName);
+            Integer containerState = MethodFactory.getContainerState(containerCode);
+            if(shipState == null || shipState != 0){
                 return false;
             }
+            if (containerState == null || containerState != 1){
+                return false;
+            }
+            String sql1 = """
+                    update container set ship_id =
+                    (select s.id from ship s where s.name = ? and s.state = 0)
+                    where code = ? and state = 1
+                    """;
+
+            return SqlFactory.handleUpdate(sql1, shipName, containerCode);
         } else {
             return false;
         }
@@ -108,19 +117,24 @@ public class CompanyManagerService implements ICompanyManager {
     @Update
     public boolean shipStartSailing(LogInfo log, String shipName) {
         if (identifyCheck.test(log)) {
-            String sql1 = "update ship set state = 1 where name = ?";
-            String sql2 = "update record set state = 6 " +
-                    "where state = ? and container_id = " +
-                    "(select c.id from container c where c.ship_id = " +
-                    "(select s.id from ship s where s.name = ?))";
-            try {
-                SqlFactory.handleUpdate(sql1, shipName);
-                SqlFactory.handleUpdate(sql2, 5, shipName);
-                return true;
-            } catch (Exception e) {
-                e.printStackTrace();
+            Integer shipState = MethodFactory.getShipState(shipName);
+            if (shipState == null || shipState == 1){
                 return false;
             }
+            if (!MethodFactory.checkLoaded(shipName)){
+                return false;
+            }
+            String sql1 = "update ship set state = 1 where name = ?";
+            String sql2 = """
+                    update record set state = 6
+                    where state = 5 and container_id = (
+                        select c.id from container c where c.ship_id = (
+                            select s.id from ship s where s.name = ?
+                        )
+                    )
+                    """;
+            return SqlFactory.handleUpdate(sql1, shipName) &&
+                    SqlFactory.handleUpdate(sql2,  shipName);
         } else {
             return false;
         }
@@ -130,16 +144,15 @@ public class CompanyManagerService implements ICompanyManager {
     @Update
     public boolean unloadItem(LogInfo log, String itemName) {
         if (identifyCheck.test(log)) {
-            String sql = "update record set state = ? " +
-                    "where item_name = ? and state = 7";
-            try {
-                SqlFactory.handleUpdate(sql, 8, itemName);
-                System.out.println("update successfully");
-                return true;
-            } catch (Exception e) {
-                e.printStackTrace();
+            Integer itemState = MethodFactory.getItemState(itemName);
+            if (itemState == null || itemState != 6) {
                 return false;
             }
+            String sql = """
+                    update record set state = 7
+                    where item_name = ?
+                    """;
+            return SqlFactory.handleUpdate(sql,  itemName);
         } else {
             return false;
         }
@@ -149,16 +162,15 @@ public class CompanyManagerService implements ICompanyManager {
     @Update
     public boolean itemWaitForChecking(LogInfo log, String item) {
         if (identifyCheck.test(log)) {
-            String sql = "update record set state = ? " +
-                    "where item_name = ? and state = ?";
-            try {
-                SqlFactory.handleUpdate(sql, 9, item, 8);
-                System.out.println("update successfully");
-                return true;
-            } catch (Exception e) {
-                e.printStackTrace();
+            Integer itemState = MethodFactory.getItemState(item);
+            if (itemState == null || itemState != 7) {
                 return false;
             }
+            String sql = """
+                    update record set state = 8
+                    where item_name = ?
+                    """;
+            return SqlFactory.handleUpdate(sql, item);
         } else {
             return false;
         }

@@ -1,7 +1,6 @@
 package service;
 
-import Interfaces.ISustcManager;
-import POJO.*;
+import main.interfaces.*;
 import utils.SqlFactory;
 import utils.SqlResult;
 import utils.annotations.Aggregated;
@@ -20,7 +19,7 @@ public class SustcManagerService implements ISustcManager {
 
 
     private int handleCount(String type) {
-        String sql = String.format("select count(id) from %s", type);
+        String sql = String.format("select count(id) from %s where trim(name) != '' ", type);
         try {
             return SqlFactory.handleSingleResult(
                     SqlFactory.handleQuery(sql, (Object) null),
@@ -187,12 +186,12 @@ public class SustcManagerService implements ISustcManager {
 
     @Override
     @Aggregated(sql = """
-            select s.type , s.name , c.name,
-                   (select ci.name from city ci where ci.id = s.city_id)
-                 , s.gender, (2022 - s.birth_year), s.phone, s.password
-            from staff s
-                     join company c on s.company_id = c.id
-            where s.name = ?;
+            select s.type , s.name ,
+                (select com.name from company com where s.company_id = com.id),
+                (select ci.name from city ci where ci.id = s.city_id)
+                  , s.gender, (2022 - s.birth_year), s.phone, s.password
+                   from staff s
+                   where s.name = ?;
             """)
     public StaffInfo getStaffInfo(LogInfo log, String name) {
         if (identifyCheck.test(log)) {
@@ -207,7 +206,8 @@ public class SustcManagerService implements ISustcManager {
                                 ),
                                 r.getString(3),
                                 r.getString(4),
-                                r.getInt(5) == 0,
+                                r.getInt(5) == 1,
+                                //r.getInt(5) == 0,
                                 r.getInt(6),
                                 r.getString(7)),
                         name

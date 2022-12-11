@@ -1,15 +1,13 @@
 package service;
 
-import Interfaces.ISeaportOfficer;
-import POJO.LogInfo;
+import main.interfaces.ISeaportOfficer;
+import main.interfaces.LogInfo;
 import utils.MethodFactory;
 import utils.SqlFactory;
 import utils.annotations.Multiple;
 import utils.annotations.Update;
 
-import java.sql.SQLException;
 import java.util.function.Predicate;
-import java.util.stream.Collectors;
 
 /**
  * seaport officer impl
@@ -24,19 +22,24 @@ public class SeaportOfficerService implements ISeaportOfficer {
 
     @Override
     @Multiple(sql = """
-            select r.item_name from record r join undertake u on r.id = u.record_id
-            where (r.state = 3 and u.type = 3 and u.city_id = ?)
-               or (r.state = 8 and u.type = 4 and u.city_id = ?)
+            select item_name
+            from record
+            where id in
+                  (select record_id from undertake
+                   where (city_id = ? and (type = 3 or type = 4))
+                  )
+              
             """)
     public String[] getAllItemsAtPort(LogInfo log) {
         if (identifyCheck.test(log)) {
             int cityId = MethodFactory.getCityId(log);
+            System.out.println(cityId);
             try {
                 return SqlFactory.query(
                         this.getClass().getMethod("getAllItemsAtPort", LogInfo.class),
                         r -> r.getString(1),
                         arr -> arr.toArray(String[]::new),
-                        cityId, cityId
+                        cityId
                 );
             } catch (Exception e) {
                 e.printStackTrace();
@@ -51,7 +54,32 @@ public class SeaportOfficerService implements ISeaportOfficer {
     @Update
     public boolean setItemCheckState(LogInfo log, String itemName, boolean success) {
         if (identifyCheck.test(log)) {
-            if (MethodFactory.checkItemExist(itemName)) {
+            if (!MethodFactory.checkItemExist(itemName)) {
+                return false;
+            }
+            Integer recordId = MethodFactory.getRecordId(itemName);
+            Integer staffId = MethodFactory.getStaffId(log.name());
+            Integer cityId = MethodFactory.getCityId(log);
+            if (recordId == null || staffId == null || cityId == null){
+                return false;
+            }
+            String sql1 = """
+                    update record set state = %d where id = ?
+                    """;
+
+            String sql2 = """
+                    update undertake set staff_id = ?,city_id = ? where record_id = ? and type = ?
+                    """;
+            Integer state = MethodFactory.getItemState(itemName);
+            if (state == null) {
+                return false;
+            }else if(state == 3){
+                SqlFactory.handleUpdate(String.format(sql1, success ? 4 : 12), recordId);
+                SqlFactory.handleUpdate(sql2,staffId,cityId,recordId,3);
+            }else if(state == 8){
+                SqlFactory.handleUpdate(String.format(sql1, success ? 9 : 13), recordId);
+                SqlFactory.handleUpdate(sql2,staffId,recordId,4);
+            }else {
                 return false;
             }
             return true;
