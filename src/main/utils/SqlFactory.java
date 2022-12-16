@@ -1,10 +1,10 @@
-package utils;
+package main.utils;
 
 import main.interfaces.ContainerInfo;
 import main.interfaces.ItemState;
 import main.interfaces.LogInfo;
-import utils.annotations.Aggregated;
-import utils.annotations.Multiple;
+import main.utils.annotations.Aggregated;
+import main.utils.annotations.Multiple;
 
 
 import java.lang.reflect.Method;
@@ -192,7 +192,7 @@ public class SqlFactory {
             }else if(type == LogInfo.StaffType.Courier){
                 ps = con.prepareStatement(String.format(sql,"courier"));
             }
-           // ps = con.prepareStatement(String.format(sql, "postgres"));
+            ps = con.prepareStatement(String.format(sql, "postgres"));
             ps.executeUpdate();
             System.out.println("curr change:"+getCurrDatabaseUser());
         } catch (SQLException e) {

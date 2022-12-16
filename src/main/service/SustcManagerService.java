@@ -1,9 +1,9 @@
-package service;
+package main.service;
 
 import main.interfaces.*;
-import utils.SqlFactory;
-import utils.SqlResult;
-import utils.annotations.Aggregated;
+import main.utils.SqlFactory;
+import main.utils.SqlResult;
+import main.utils.annotations.Aggregated;
 
 import java.sql.SQLException;
 import java.util.function.Function;

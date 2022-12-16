@@ -1,4 +1,4 @@
-package utils.annotations;
+package main.utils.annotations;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -10,6 +10,6 @@ import java.lang.annotation.Target;
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
-public @interface Multiple {
+public @interface Aggregated {
     String sql() default "";
 }

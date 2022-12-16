@@ -1,15 +1,14 @@
-package service;
+package main.service;
 
 import main.interfaces.ICourier;
 import main.interfaces.ItemInfo;
 import main.interfaces.ItemState;
 import main.interfaces.LogInfo;
-import utils.MethodFactory;
-import utils.SqlFactory;
-import utils.annotations.Update;
+import main.utils.MethodFactory;
+import main.utils.SqlFactory;
+import main.utils.annotations.Update;
 
 
-import java.sql.SQLException;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -18,8 +17,8 @@ import java.util.function.Predicate;
  * impl for courier
  */
 public class CourierService implements ICourier {
-    private final Predicate<LogInfo> identifyCheck = (id) -> id.type() == LogInfo.StaffType.Courier;
 
+    private final Predicate<LogInfo> identifyCheck = (id) -> id.type() == LogInfo.StaffType.Courier;
     private final Runnable role = () -> SqlFactory.setRole(LogInfo.StaffType.Courier);
 
     private boolean checkItem(ItemInfo item, LogInfo log) {

@@ -1,11 +1,11 @@
-package service;
+package main.service;
 
 import main.interfaces.ICompanyManager;
 import main.interfaces.LogInfo;
-import utils.MethodFactory;
-import utils.SqlFactory;
-import utils.annotations.Multiple;
-import utils.annotations.Update;
+import main.utils.MethodFactory;
+import main.utils.SqlFactory;
+import main.utils.annotations.Multiple;
+import main.utils.annotations.Update;
 
 
 import java.util.function.Predicate;

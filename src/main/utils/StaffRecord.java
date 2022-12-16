@@ -1,4 +1,4 @@
-package utils;
+package main.utils;
 public class StaffRecord {
     public String name;
     public String type;

@@ -1,11 +1,14 @@
-package service;
+package main.service;
 
 import main.interfaces.*;
-import utils.ItemRecord;
-import utils.StaffRecord;
+import main.utils.ItemRecord;
+import main.utils.JdbcUtil;
+import main.utils.StaffRecord;
+
 
 import java.sql.*;
 import java.util.*;
+
 
 public class DatabaseManipulation implements IDatabaseManipulation {
     public DatabaseManipulation() {
@@ -76,14 +79,15 @@ public class DatabaseManipulation implements IDatabaseManipulation {
 
     Connection connection;
 
+
+
     public DatabaseManipulation(String database, String root, String pass) {
         try {
-//            System.out.printf("%s %s %s",database,root,pass);
             Class.forName("org.postgresql.Driver");
             String parameter = "?useUnicode=true&characterEncoding=utf8&rewriteBatchedStatement=true";
             connection = DriverManager.getConnection("jdbc:postgresql://" + database + parameter, root, pass);
+            JdbcUtil.connect("jdbc:postgresql://" + database + parameter, root, pass);
             connection.setAutoCommit(false);
-
             String sql1 = """
                     create table if not exists company(
                         name varchar(30) unique not null,
@@ -173,7 +177,6 @@ public class DatabaseManipulation implements IDatabaseManipulation {
             connection.prepareStatement(sql5).execute();
             connection.prepareStatement(sql6).execute();
             connection.prepareStatement(sql7).execute();
-
         } catch (Exception e) {
 //            e.printStackTrace();
             try {

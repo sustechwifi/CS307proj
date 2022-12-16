@@ -1,15 +1,8 @@
 package test;
 
-
-
 import main.interfaces.*;
 import org.junit.jupiter.api.*;
-import test.answers.CompanyManagerUserTest;
-import test.answers.CourierUserTest;
-import test.answers.SUSTCDepartmentManagerUserTest;
-import test.answers.SeaportOfficerUserTest;
-import utils.JdbcUtil;
-import utils.annotations.SqlSupport;
+import test.answers.*;
 
 import java.io.*;
 import java.sql.*;
@@ -18,11 +11,10 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SqlSupport
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class LocalJudge {
 
-    private static String database = "127.0.0.1:5432/sustc2";
+    private static String database = "localhost:5432/sustc2";
 
     private static String root = "postgres";
 
@@ -32,7 +24,7 @@ public class LocalJudge {
 
     private static String staffsCSV = "./data/staffs.csv";
 
-    private static String manipulationImplClassName = "service.DatabaseManipulation";
+    private static String manipulationImplClassName = "main.service.DatabaseManipulation";
 
     private static IDatabaseManipulation manipulation = null;
 
@@ -142,7 +134,6 @@ public class LocalJudge {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
-        JdbcUtil.getConnection(LocalJudge.class);
     }
 
     @Test
@@ -264,7 +255,6 @@ public class LocalJudge {
         treeSet.addAll(entries);
         for (Map.Entry<List<Object>, Boolean> entry : treeSet) {
             List<Object> params = entry.getKey();
-            System.out.println(params);
             assertEquals(entry.getValue(), manipulation.newItem((LogInfo) params.get(0), (ItemInfo) params.get(1)));
         }
 
@@ -284,7 +274,6 @@ public class LocalJudge {
         Set<Map.Entry<List<Object>, Boolean>> entries = courierUserTest.setItemState.entrySet();
         for (Map.Entry<List<Object>, Boolean> entry : entries) {
             List<Object> params = entry.getKey();
-            System.out.println(params);
             assertEquals(entry.getValue(), manipulation.setItemState((LogInfo) params.get(0), (String) params.get(1), (ItemState) params.get(2)));
         }
 
@@ -299,7 +288,7 @@ public class LocalJudge {
         Set<Map.Entry<List<Object>, Double>> entries = companyManagerUserTest.getImportTaxRate.entrySet();
         for (Map.Entry<List<Object>, Double> entry : entries) {
             List<Object> params = entry.getKey();
-            assertEquals(entry.getValue(), manipulation.getImportTaxRate((LogInfo) params.get(0), (String) params.get(1), (String) params.get(2)));
+            assertEquals(entry.getValue(), manipulation.getImportTaxRate((LogInfo) params.get(0), (String) params.get(1), (String) params.get(2)), 0.01);
         }
     }
 
@@ -310,7 +299,7 @@ public class LocalJudge {
         Set<Map.Entry<List<Object>, Double>> entries = companyManagerUserTest.getExportTaxRate.entrySet();
         for (Map.Entry<List<Object>, Double> entry : entries) {
             List<Object> params = entry.getKey();
-            assertEquals(entry.getValue(), manipulation.getExportTaxRate((LogInfo) params.get(0), (String) params.get(1), (String) params.get(2)));
+            assertEquals(entry.getValue(), manipulation.getExportTaxRate((LogInfo) params.get(0), (String) params.get(1), (String) params.get(2)), 0.01);
         }
     }
 
@@ -327,7 +316,6 @@ public class LocalJudge {
         Set<Map.Entry<List<Object>, Boolean>> entries = companyManagerUserTest.loadItemToContainer.entrySet();
         for (Map.Entry<List<Object>, Boolean> entry : entries) {
             List<Object> params = entry.getKey();
-            System.out.println(params);
             assertEquals(entry.getValue(), manipulation.loadItemToContainer((LogInfo) params.get(0), (String) params.get(1), (String) params.get(2)));
         }
 
@@ -348,7 +336,6 @@ public class LocalJudge {
         Set<Map.Entry<List<Object>, Boolean>> entries = companyManagerUserTest.loadContainerToShip.entrySet();
         for (Map.Entry<List<Object>, Boolean> entry : entries) {
             List<Object> params = entry.getKey();
-            System.out.println(params);
             assertEquals(entry.getValue(), manipulation.loadContainerToShip((LogInfo) params.get(0), (String) params.get(1), (String) params.get(2)));
         }
 
@@ -369,7 +356,6 @@ public class LocalJudge {
         Set<Map.Entry<List<Object>, Boolean>> entries = companyManagerUserTest.shipStartSailing.entrySet();
         for (Map.Entry<List<Object>, Boolean> entry : entries) {
             List<Object> params = entry.getKey();
-            System.out.println(params);
             assertEquals(entry.getValue(), manipulation.shipStartSailing((LogInfo) params.get(0), (String) params.get(1)));
         }
 
@@ -390,7 +376,6 @@ public class LocalJudge {
         Set<Map.Entry<List<Object>, Boolean>> entries = companyManagerUserTest.unloadItem.entrySet();
         for (Map.Entry<List<Object>, Boolean> entry : entries) {
             List<Object> params = entry.getKey();
-            System.out.println(params);
             assertEquals(entry.getValue(), manipulation.unloadItem((LogInfo) params.get(0), (String) params.get(1)));
         }
 
@@ -410,7 +395,6 @@ public class LocalJudge {
         Set<Map.Entry<List<Object>, Boolean>> entries = companyManagerUserTest.itemWaitForChecking.entrySet();
         for (Map.Entry<List<Object>, Boolean> entry : entries) {
             List<Object> params = entry.getKey();
-            System.out.println(params);
             assertEquals(entry.getValue(), manipulation.itemWaitForChecking((LogInfo) params.get(0), (String) params.get(1)));
         }
 
@@ -459,13 +443,10 @@ public class LocalJudge {
         });
         return sb.toString();
     }
+
     public void assertItemInfo(ItemInfo a, ItemInfo b) {
-        if (a == null && b == null) {
-            return;
-        }
-        if ((a != null && b == null) || (a == null && b != null)) {
-            fail();
-        }
+        if (a == null && b == null) return;
+        if ((a != null && b == null) || (a == null && b != null)) fail();
         double EPS = 0.0001;
         assertEquals(a.name(), b.name());
         assertEquals(a.$class(), b.$class());

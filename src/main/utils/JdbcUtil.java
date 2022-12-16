@@ -1,6 +1,6 @@
-package utils;
+package main.utils;
 
-import utils.annotations.SqlSupport;
+import main.utils.annotations.SqlSupport;
 
 import java.sql.*;
 
@@ -39,6 +39,35 @@ public class JdbcUtil {
             e.printStackTrace();
         }
     }
+
+
+    private static String[] otherConfigs = {
+            "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO sustcmanager;",
+            "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO seaportofficer;",
+            "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO courier;",
+            "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO companymanager;",
+            "grant select on undertake, city, company, container,staff,ship,record to sustcmanager,courier,seaportofficer,companymanager;",
+            "grant insert on undertake, record to courier;",
+            "grant update on record ,   undertake to seaportofficer, courier;",
+            "grant update on record,    container,ship to companymanager;"
+    };
+
+    public static void loadGrand(){
+        if (connection == null){
+            return;
+        }
+        var configs = otherConfigs;
+        PreparedStatement ps;
+        try {
+            for (String config : configs) {
+                ps = connection.prepareStatement(config);
+                ps.executeUpdate();
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
 }
 
 

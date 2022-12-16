@@ -1,7 +1,7 @@
-package utils;
+package main.utils;
 
 import main.interfaces.LogInfo;
-import utils.annotations.Aggregated;
+import main.utils.annotations.Aggregated;
 
 import java.util.function.Predicate;
 
@@ -15,7 +15,7 @@ public class MethodFactory {
 
     static {
         try {
-            clazz = Class.forName("utils.MethodFactory");
+            clazz = Class.forName("main.utils.MethodFactory");
         } catch (ClassNotFoundException e) {
             e.printStackTrace();
         }
