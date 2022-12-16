@@ -30,8 +30,7 @@ public class SqlFactory {
         }
     }
 
-    private static <O> O loadCondition(String sql,
-                                       Object[] conditions,
+    private static <O> O loadCondition(String sql, Object[] conditions,
                                        BiFunction<Connection, PreparedStatement, O> f)
             throws SQLException {
         Connection connection = JdbcUtil.connection;
@@ -73,10 +72,8 @@ public class SqlFactory {
         }
     }
 
-    public static <I, O> O handleMultipleResult(SqlResult resultSet,
-                                                Function<SqlResult, I> map,
-                                                Function<Collection<I>, O> transform)
-            throws SQLException {
+    public static <I, O> O handleMultipleResult(SqlResult resultSet, Function<SqlResult, I> map,
+                                                Function<Collection<I>, O> transform) {
         var tmp = new ArrayList<I>();
         if (resultSet.next()) {
             do {
@@ -111,10 +108,8 @@ public class SqlFactory {
         }
     }
 
-    public static <I, O> O query(Method method,
-                                    Function<SqlResult, I> map,
-                                    Function<Collection<I>, O> transform,
-                                    Object... args) {
+    public static <I, O> O query(Method method, Function<SqlResult, I> map,
+                                    Function<Collection<I>, O> transform, Object... args) {
         try {
             if (method.isAnnotationPresent(Multiple.class)) {
                 Multiple init = method.getAnnotation(Multiple.class);
@@ -180,6 +175,47 @@ public class SqlFactory {
         }
     }
 
+    public static void setRole(LogInfo.StaffType type){
+        Connection con = JdbcUtil.connection;
+        if (con == null || type == null){
+            return;
+        }
+        String sql = "set role %s";
+        try {
+            PreparedStatement ps = null;
+            if (type == LogInfo.StaffType.SustcManager) {
+                ps = con.prepareStatement(String.format(sql,"sustcmanager"));
+            }else if(type == LogInfo.StaffType.CompanyManager){
+                ps = con.prepareStatement(String.format(sql,"companymanager"));
+            }else if(type == LogInfo.StaffType.SeaportOfficer){
+                ps = con.prepareStatement(String.format(sql,"seaportofficer"));
+            }else if(type == LogInfo.StaffType.Courier){
+                ps = con.prepareStatement(String.format(sql,"courier"));
+            }
+           // ps = con.prepareStatement(String.format(sql, "postgres"));
+            ps.executeUpdate();
+            System.out.println("curr change:"+getCurrDatabaseUser());
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static String getCurrDatabaseUser(){
+        Connection con = JdbcUtil.connection;
+        if (con == null){
+            return null;
+        }
+        PreparedStatement ps;
+        try {
+            ps = con.prepareStatement("show role");
+            var user = ps.executeQuery();
+            user.next();
+            return user.getString(1);
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
 
     public static ContainerInfo.Type mapContainerType(String type) {
         return switch (type) {

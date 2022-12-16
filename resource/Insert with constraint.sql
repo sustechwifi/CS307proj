@@ -67,7 +67,7 @@ create table if not exists record(
     --7 Unpacking for Container  8 Import Checking  9 From-Import Transporting
     --10 Delivering  11 Finish
     --12 Export Check Fail
-    --18 Import Check Fail
+    --13 Import Check Fail
     company_id int not null,
     container_id int,
     id serial primary key,
@@ -95,4 +95,27 @@ create table if not exists undertake(
     foreign key (city_id) references city(id)
 );
 
+
+create index container_ship_index
+    on container (ship_id);
+
+create index undertake_record_id_index
+    on undertake (record_id);
+
+
+
+create role sustcmanager;
+create role seaportofficer;
+create role courier;
+create role companymanager;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO courier;
+
+grant select on sustc2.public.undertake,city,company,container,staff,ship,record to sustcmanager,courier,seaportofficer,companymanager;
+grant all on undertake, record to courier;
+grant update on record to seaportofficer, courier;
+grant update on record,container,ship to companymanager;
+
+set role postgres;
+show role ;
 

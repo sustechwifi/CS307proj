@@ -18,9 +18,9 @@ import java.util.function.Predicate;
  * impl for courier
  */
 public class CourierService implements ICourier {
-    private final Predicate<LogInfo> identifyCheck =
-            (id) -> id.type() == LogInfo.StaffType.Courier;
+    private final Predicate<LogInfo> identifyCheck = (id) -> id.type() == LogInfo.StaffType.Courier;
 
+    private final Runnable role = () -> SqlFactory.setRole(LogInfo.StaffType.Courier);
 
     private boolean checkItem(ItemInfo item, LogInfo log) {
         return
@@ -39,6 +39,7 @@ public class CourierService implements ICourier {
     @Update
     public boolean newItem(LogInfo log, ItemInfo item) {
         if (identifyCheck.test(log)) {
+            role.run();
             if (!checkItem(item, log)) {
                 return false;
             }
@@ -54,6 +55,7 @@ public class CourierService implements ICourier {
     @Update
     public boolean setItemState(LogInfo log, String name, ItemState s) {
         if (identifyCheck.test(log)) {
+            role.run();
             if (!MethodFactory.checkItemExist(name)) {
                 return false;
             }

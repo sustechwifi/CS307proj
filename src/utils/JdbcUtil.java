@@ -16,6 +16,12 @@ public class JdbcUtil {
                 Class.forName(infoAnno.DRIVER());
                 connection =  DriverManager.getConnection(infoAnno.URL(),infoAnno.USERNAME(),infoAnno.PASSWORD());
                 connection.setAutoCommit(false);
+                var configs = infoAnno.otherConfigs();
+                PreparedStatement ps;
+                for (String config : configs) {
+                    ps = connection.prepareStatement(config);
+                    ps.executeUpdate();
+                }
             } else {
                 System.out.println("annotation SqlSupport need");
             }

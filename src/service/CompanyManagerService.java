@@ -17,8 +17,9 @@ import java.util.stream.Collectors;
  */
 public class CompanyManagerService implements ICompanyManager {
 
-    private final Predicate<LogInfo> identifyCheck =
-            (id) -> id.type() == LogInfo.StaffType.CompanyManager;
+    private final Predicate<LogInfo> identifyCheck = (id) -> id.type() == LogInfo.StaffType.CompanyManager;
+
+    private final Runnable role = () -> SqlFactory.setRole(LogInfo.StaffType.CompanyManager);
 
 
     @Multiple(sql = """
@@ -27,12 +28,12 @@ public class CompanyManagerService implements ICompanyManager {
             where u.type = ? and r.item_class = ? and u.city_id =
             (select c.id from city c where c.name = ?)
             """)
-    public double getTaxRate(String city, String itemClass, int type) {
+    public double getTaxRate(String city, String itemClass, int type,String format) {
         try {
             return SqlFactory.query(
-                    this.getClass().getMethod("getTaxRate", String.class, String.class, int.class),
-                    (r) -> r.getDouble(1) / r.getLong(2),
-                    (res) -> Double.parseDouble(String.format("%.5f", res.stream()
+                    this.getClass().getMethod("getTaxRate", String.class, String.class, int.class,String.class),
+                    r -> r.getDouble(1) / r.getLong(2),
+                    res -> Double.parseDouble(String.format(format, res.stream()
                             .collect(Collectors.summarizingDouble(Double::doubleValue))
                             .getAverage())),
                     type, itemClass, city);
@@ -45,7 +46,8 @@ public class CompanyManagerService implements ICompanyManager {
     @Override
     public double getImportTaxRate(LogInfo log, String city, String itemClass) {
         if (identifyCheck.test(log)) {
-            return getTaxRate(city, itemClass, 4);
+            role.run();
+            return getTaxRate(city, itemClass, 4,"%.15f");
         } else {
             return -1;
         }
@@ -54,7 +56,8 @@ public class CompanyManagerService implements ICompanyManager {
     @Override
     public double getExportTaxRate(LogInfo log, String city, String itemClass) {
         if (identifyCheck.test(log)) {
-            return getTaxRate(city, itemClass, 3);
+            role.run();
+            return getTaxRate(city, itemClass, 3,"%.18f");
         } else {
             return -1;
         }
@@ -64,6 +67,7 @@ public class CompanyManagerService implements ICompanyManager {
     @Update
     public boolean loadItemToContainer(LogInfo log, String itemName, String containerCode) {
         if (identifyCheck.test(log)) {
+            role.run();
             System.out.println("begin:");
             Integer id = MethodFactory.getEmptyContainer(containerCode);
             if (id == null){
@@ -93,6 +97,7 @@ public class CompanyManagerService implements ICompanyManager {
     @Update
     public boolean loadContainerToShip(LogInfo log, String shipName, String containerCode) {
         if (identifyCheck.test(log)) {
+            role.run();
             Integer shipState = MethodFactory.getShipState(shipName);
             Integer containerState = MethodFactory.getContainerState(containerCode);
             if(shipState == null || shipState != 0){
@@ -117,6 +122,7 @@ public class CompanyManagerService implements ICompanyManager {
     @Update
     public boolean shipStartSailing(LogInfo log, String shipName) {
         if (identifyCheck.test(log)) {
+            role.run();
             Integer shipState = MethodFactory.getShipState(shipName);
             if (shipState == null || shipState == 1){
                 return false;
@@ -144,6 +150,7 @@ public class CompanyManagerService implements ICompanyManager {
     @Update
     public boolean unloadItem(LogInfo log, String itemName) {
         if (identifyCheck.test(log)) {
+            role.run();
             Integer itemState = MethodFactory.getItemState(itemName);
             if (itemState == null || itemState != 6) {
                 return false;
@@ -162,6 +169,7 @@ public class CompanyManagerService implements ICompanyManager {
     @Update
     public boolean itemWaitForChecking(LogInfo log, String item) {
         if (identifyCheck.test(log)) {
+            role.run();
             Integer itemState = MethodFactory.getItemState(item);
             if (itemState == null || itemState != 7) {
                 return false;

@@ -16,9 +16,9 @@ import java.util.function.Predicate;
  */
 public class SeaportOfficerService implements ISeaportOfficer {
 
-    private final Predicate<LogInfo> identifyCheck =
-            (id) -> id.type() == LogInfo.StaffType.SeaportOfficer;
+    private final Predicate<LogInfo> identifyCheck = (id) -> id.type() == LogInfo.StaffType.SeaportOfficer;
 
+    private final Runnable role = () -> SqlFactory.setRole(LogInfo.StaffType.SeaportOfficer);
 
     @Override
     @Multiple(sql = """
@@ -32,6 +32,7 @@ public class SeaportOfficerService implements ISeaportOfficer {
             """)
     public String[] getAllItemsAtPort(LogInfo log) {
         if (identifyCheck.test(log)) {
+            role.run();
             int cityId = MethodFactory.getCityId(log);
             System.out.println(cityId);
             try {
@@ -54,6 +55,7 @@ public class SeaportOfficerService implements ISeaportOfficer {
     @Update
     public boolean setItemCheckState(LogInfo log, String itemName, boolean success) {
         if (identifyCheck.test(log)) {
+            role.run();
             if (!MethodFactory.checkItemExist(itemName)) {
                 return false;
             }

@@ -14,9 +14,9 @@ import java.util.function.Predicate;
  */
 public class SustcManagerService implements ISustcManager {
 
-    private final Predicate<LogInfo> identifyCheck =
-            (id) -> id.type() == LogInfo.StaffType.SustcManager;
+    private final Predicate<LogInfo> identifyCheck = (id) -> id.type() == LogInfo.StaffType.SustcManager;
 
+    private final Runnable role = () -> SqlFactory.setRole(LogInfo.StaffType.SustcManager);
 
     private int handleCount(String type) {
         String sql = String.format("select count(id) from %s where trim(name) != '' ", type);
@@ -34,6 +34,7 @@ public class SustcManagerService implements ISustcManager {
     @Override
     public int getCompanyCount(LogInfo log) {
         if (identifyCheck.test(log)) {
+            role.run();
             return handleCount("company");
         } else {
             return -1;
@@ -43,6 +44,7 @@ public class SustcManagerService implements ISustcManager {
     @Override
     public int getCityCount(LogInfo log) {
         if (identifyCheck.test(log)) {
+            role.run();
             return handleCount("city");
         } else {
             return -1;
@@ -53,6 +55,7 @@ public class SustcManagerService implements ISustcManager {
     @Aggregated(sql = "select count(id) from staff where type = 4")
     public int getCourierCount(LogInfo log) {
         if (identifyCheck.test(log)) {
+            role.run();
             try {
                 return SqlFactory.query(
                         this.getClass().getMethod("getCourierCount", LogInfo.class),
@@ -71,6 +74,7 @@ public class SustcManagerService implements ISustcManager {
     @Override
     public int getShipCount(LogInfo log) {
         if (identifyCheck.test(log)) {
+            role.run();
             return handleCount("ship");
         } else {
             return -1;
@@ -89,6 +93,7 @@ public class SustcManagerService implements ISustcManager {
     @Override
     public ItemInfo getItemInfo(LogInfo log, String name) {
         if (identifyCheck.test(log)) {
+            role.run();
             String sql = "select * from record where item_name = ?";
             String model = "select (select c.name from city c where c.id = u.city_id) city, s.name , u.tax" +
                     "       from undertake u join staff s on u.staff_id = s.id " +
@@ -145,6 +150,7 @@ public class SustcManagerService implements ISustcManager {
             """)
     public ShipInfo getShipInfo(LogInfo log, String name) {
         if (identifyCheck.test(log)) {
+            role.run();
             try {
                 return SqlFactory.query(
                         this.getClass().getMethod("getShipInfo", LogInfo.class, String.class),
@@ -166,13 +172,15 @@ public class SustcManagerService implements ISustcManager {
     @Aggregated(sql = "select c.type,c.code,c.state from container c where c.code = ?")
     public ContainerInfo getContainerInfo(LogInfo log, String code) {
         if (identifyCheck.test(log)) {
+            role.run();
             try {
                 return SqlFactory.query(
                         this.getClass().getMethod("getContainerInfo", LogInfo.class, String.class),
                         r -> new ContainerInfo(
                                 SqlFactory.mapContainerType(r.getString(1)),
                                 r.getString(2),
-                                r.getInt(3) == 1),
+                                r.getInt(3) == 1
+                        ),
                         code
                 );
             } catch (Exception e) {
@@ -195,6 +203,7 @@ public class SustcManagerService implements ISustcManager {
             """)
     public StaffInfo getStaffInfo(LogInfo log, String name) {
         if (identifyCheck.test(log)) {
+            role.run();
             try {
                 return SqlFactory.query(
                         this.getClass().getMethod("getStaffInfo", LogInfo.class, String.class),
@@ -206,7 +215,7 @@ public class SustcManagerService implements ISustcManager {
                                 ),
                                 r.getString(3),
                                 r.getString(4),
-                                r.getInt(5) == 1,
+                                r.getInt(5) == 0,
                                 //r.getInt(5) == 0,
                                 r.getInt(6),
                                 r.getString(7)),

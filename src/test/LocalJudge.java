@@ -18,12 +18,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SqlSupport(
-        DRIVER = "org.postgresql.Driver",
-        USERNAME = "postgres",
-        PASSWORD = "20030118",
-        URL = "jdbc:postgresql://127.0.0.1:5432/sustc2?useUnicode=true&characterEncoding=utf8&rewriteBatchedStatement=true"
-)
+@SqlSupport()
 @TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 public class LocalJudge {
 
@@ -55,7 +50,6 @@ public class LocalJudge {
 
     @BeforeAll
     public static void clearDatabaseAndPrepareAnswer() {
-        JdbcUtil.getConnection(LocalJudge.class);
         try {
             Class.forName("org.postgresql.Driver");
         } catch (Exception e) {
@@ -148,6 +142,7 @@ public class LocalJudge {
         } catch (IOException e) {
             throw new RuntimeException(e);
         }
+        JdbcUtil.getConnection(LocalJudge.class);
     }
 
     @Test
@@ -201,7 +196,7 @@ public class LocalJudge {
         Set<Map.Entry<List<Object>, ItemInfo>> entries = sustcDepartmentManagerUserTest.getItemInfo.entrySet();
         for (Map.Entry<List<Object>, ItemInfo> entry : entries) {
             List<Object> params = entry.getKey();
-            assertEquals(entry.getValue(), manipulation.getItemInfo((LogInfo) params.get(0), (String) params.get(1)));
+            assertItemInfo(entry.getValue(), manipulation.getItemInfo((LogInfo) params.get(0), (String) params.get(1)));
         }
     }
 
@@ -463,5 +458,28 @@ public class LocalJudge {
             sb.append("\n");
         });
         return sb.toString();
+    }
+    public void assertItemInfo(ItemInfo a, ItemInfo b) {
+        if (a == null && b == null) {
+            return;
+        }
+        if ((a != null && b == null) || (a == null && b != null)) {
+            fail();
+        }
+        double EPS = 0.0001;
+        assertEquals(a.name(), b.name());
+        assertEquals(a.$class(), b.$class());
+        assertTrue(Math.abs(a.price() - b.price()) / a.price() < EPS);
+        assertEquals(a.state(), b.state());
+        assertEquals(a.retrieval().city(), b.retrieval().city());
+        assertEquals(a.retrieval().courier(), b.retrieval().courier());
+        assertEquals(a.delivery().city(), b.delivery().city());
+        assertEquals(a.delivery().courier(), b.delivery().courier());
+        assertEquals(a.$import().city(), b.$import().city());
+        assertEquals(a.$import().officer(), b.$import().officer());
+        assertTrue(Math.abs(a.$import().tax() - b.$import().tax()) / a.$import().tax() < EPS);
+        assertEquals(a.export().city(), b.export().city());
+        assertEquals(a.export().officer(), b.export().officer());
+        assertTrue(Math.abs(a.export().tax() - b.export().tax()) / a.export().tax() < EPS);
     }
 }
