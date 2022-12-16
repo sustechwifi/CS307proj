@@ -30,6 +30,15 @@ public class JdbcUtil {
         }
         return connection;
     }
+
+    public static void connect(String url,String username,String password){
+        try {
+            connection = DriverManager.getConnection(url,username,password);
+            connection.setAutoCommit(false);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
 }
 
 

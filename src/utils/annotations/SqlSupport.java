@@ -16,7 +16,7 @@ public @interface SqlSupport {
     String DRIVER () default  "org.postgresql.Driver";
     String USERNAME () default "postgres";
     String PASSWORD () default "20030118";
-    String URL () default "jdbc:postgresql://127.0.0.1:5432/postgres";
+    String URL () default "jdbc:postgresql://127.0.0.1:5432/sustc2";
     String [] otherConfigs() default {
         "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO sustcmanager;",
         "ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO seaportofficer;",
