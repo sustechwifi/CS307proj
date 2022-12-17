@@ -280,7 +280,7 @@ public class LocalJudge {
             assertEquals(entry.getValue(), manipulation.setItemState((LogInfo) params.get(0), (String) params.get(1), (ItemState) params.get(2)));
         }
 
-        ItemInfo itemInfo = manipulation.getItemInfo(logInfo, "peach-778ca");
+        ItemInfo itemInfo = manipulation.getItemInfo(logInfo, "newItem1");
         assertEquals(ItemState.ToExportTransporting, itemInfo.state());
     }
 

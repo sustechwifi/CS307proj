@@ -45,7 +45,12 @@ public class CourierService implements ICourier {
             }
             String sql = "insert into record(item_name, item_class, item_price, state, company_id) " +
                     "values (?,?,?,?,?)";
-            return SqlFactory.handleUpdate(sql, item.name(), item.$class(), item.price(), 1, MethodFactory.getCompanyId(log));
+            String sql2 = "insert into undertake (record_id,staff_id,city_id,type) values(?,?,?,1) ";
+            return SqlFactory.handleUpdate(sql, item.name(), item.$class(), item.price(), 1, MethodFactory.getCompanyId(log))
+                    && SqlFactory.handleUpdate(sql2,
+                    MethodFactory.getRecordId(item.name()),
+                    MethodFactory.getStaffId(log.name()),
+                    MethodFactory.getCityId(log));
         } else {
             return false;
         }
