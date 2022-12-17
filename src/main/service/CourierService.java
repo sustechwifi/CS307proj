@@ -9,6 +9,7 @@ import main.utils.SqlFactory;
 import main.utils.annotations.Update;
 
 
+import java.sql.SQLException;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -88,6 +89,29 @@ public class CourierService implements ICourier {
                     if (itemState != 10){
                         return false;
                     }
+                }
+                String sql = """
+                        select (select name from staff where id = u.staff_id) from undertake u where u.type = 6 and
+                        u.record_id = (select id from record where item_name = ?)
+                        """;
+                try {
+                    String courierName = SqlFactory.handleSingleResult(
+                            SqlFactory.handleQuery(sql, name),
+                            r -> r.getString(1)
+                    );
+                    if (courierName == null){
+                        String sql2 = """
+                                update undertake set
+                                staff_id = (select id from staff where name = ?),
+                                city_id = (select city_id from staff where name = ?)
+                                where (type = 5 or type = 6) and record_id = (select id from record where item_name = ?)
+                                """;
+                        SqlFactory.handleUpdate(sql2,log.name(),log.name(),name);
+                    }else if(!courierName.equals(log.name())){
+                        return false;
+                    }
+                } catch (SQLException e) {
+                    e.printStackTrace();
                 }
             }else if (MethodFactory.checkCourier(log, name,1) && itemState <= 2){
                 if (nextState > 3 || nextState - itemState != 1){

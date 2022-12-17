@@ -216,5 +216,19 @@ public class MethodFactory {
         }
     }
 
+    @Aggregated(sql = "select container_id from record where item_name = ?")
+    public static Integer getContainerIdByRecord(String name) {
+        try {
+            return SqlFactory.query(
+                    clazz.getMethod("getContainerIdByRecord", String.class),
+                    r -> r.getInt(1),
+                    name
+            );
+        } catch (Exception e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
 
 }

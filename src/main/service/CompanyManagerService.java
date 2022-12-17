@@ -78,7 +78,7 @@ public class CompanyManagerService implements ICompanyManager {
                 return false;
             }
             String sql1 = """
-                    update record set state = 5,
+                    update record set state = 4,
                     container_id = ?
                     where item_name = ?
                     """;
@@ -106,13 +106,19 @@ public class CompanyManagerService implements ICompanyManager {
             if (containerState == null || containerState != 1){
                 return false;
             }
+
             String sql1 = """
                     update container set ship_id =
                     (select s.id from ship s where s.name = ? and s.state = 0)
                     where code = ? and state = 1
                     """;
+            String sql2 = """
+                    update record set state = 5 where container_id = (select id from container where code = ?)
+                    and state = 4
+                    """;
 
-            return SqlFactory.handleUpdate(sql1, shipName, containerCode);
+            return SqlFactory.handleUpdate(sql1, shipName, containerCode) &&
+                    SqlFactory.handleUpdate(sql2,containerCode);
         } else {
             return false;
         }
@@ -155,11 +161,24 @@ public class CompanyManagerService implements ICompanyManager {
             if (itemState == null || itemState != 6) {
                 return false;
             }
-            String sql = """
+            Integer containerId = MethodFactory.getContainerIdByRecord(itemName);
+            if (containerId == null){
+                return false;
+            }
+            String sql1 = """
                     update record set state = 7
                     where item_name = ?
                     """;
-            return SqlFactory.handleUpdate(sql,  itemName);
+            String sql2 = """
+                    update container set state = 0 where id = ?;
+                    """;
+            String sql3 = """
+                    update ship set state = 0 where id = (select c.ship_id from container
+                    c where c.id = ?);
+                    """;
+            return SqlFactory.handleUpdate(sql1,  itemName) &&
+                    SqlFactory.handleUpdate(sql2,containerId) &&
+                    SqlFactory.handleUpdate(sql3, containerId);
         } else {
             return false;
         }
