@@ -26,9 +26,9 @@ public class SeaportOfficerService implements ISeaportOfficer {
             from record
             where id in
                   (select record_id from undertake
-                   where (city_id = ? and (type = 3 or type = 4))
+                   where (city_id = ? and (type = 3 or type = 4) and staff_id is null)
                   )
-              
+              and (state = 3 or state = 8)
             """)
     public String[] getAllItemsAtPort(LogInfo log) {
         if (identifyCheck.test(log)) {

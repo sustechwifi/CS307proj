@@ -2,7 +2,10 @@ package test;
 
 import main.interfaces.*;
 import org.junit.jupiter.api.*;
-import test.answers.*;
+import test.answers.CompanyManagerUserTest;
+import test.answers.CourierUserTest;
+import test.answers.SUSTCDepartmentManagerUserTest;
+import test.answers.SeaportOfficerUserTest;
 
 import java.io.*;
 import java.sql.*;
