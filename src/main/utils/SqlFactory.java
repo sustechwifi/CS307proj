@@ -72,6 +72,24 @@ public class SqlFactory {
         }
     }
 
+    public static <O> Object singleSelect(SqlResult resultSet,Class<O> returnType){
+        if (resultSet.next()){
+            if (returnType.equals(String.class)){
+                return resultSet.getString(1);
+            }else if (returnType.equals(Integer.class)){
+                return resultSet.getInt(1);
+            }else if (returnType.equals(Double.class)){
+                return resultSet.getDouble(1);
+            }else if (returnType.equals(boolean.class)){
+                return resultSet.getBoolean(1);
+            }else {
+                return null;
+            }
+        }else {
+            return null;
+        }
+    }
+
     public static <I, O> O handleMultipleResult(SqlResult resultSet, Function<SqlResult, I> map,
                                                 Function<Collection<I>, O> transform) {
         var tmp = new ArrayList<I>();

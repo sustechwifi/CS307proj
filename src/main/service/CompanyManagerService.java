@@ -2,12 +2,14 @@ package main.service;
 
 import main.interfaces.ICompanyManager;
 import main.interfaces.LogInfo;
-import main.utils.MethodFactory;
+import main.utils.DatabaseManipulationProxy;
+import main.utils.MethodInterFaces;
 import main.utils.SqlFactory;
 import main.utils.annotations.Multiple;
-import main.utils.annotations.Update;
 
 
+
+import java.lang.reflect.Proxy;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -21,6 +23,11 @@ public class CompanyManagerService implements ICompanyManager {
 
     private final Runnable role = () -> SqlFactory.setRole(LogInfo.StaffType.CompanyManager);
 
+    private final MethodInterFaces mapper = (MethodInterFaces) Proxy.newProxyInstance(
+            CompanyManagerService.class.getClassLoader(),
+            new Class[]{MethodInterFaces.class},
+            new DatabaseManipulationProxy()
+    );
 
     @Multiple(sql = """
             select u.tax , r.item_price from undertake u
@@ -64,42 +71,29 @@ public class CompanyManagerService implements ICompanyManager {
     }
 
     @Override
-    @Update
     public boolean loadItemToContainer(LogInfo log, String itemName, String containerCode) {
         if (identifyCheck.test(log)) {
             role.run();
-            System.out.println("begin:");
-            Integer id = MethodFactory.getEmptyContainer(containerCode);
+            Integer id = mapper.getEmptyContainer(containerCode);
             if (id == null){
                 return false;
             }
-            Integer state = MethodFactory.getItemState(itemName);
+            Integer state = mapper.getItemState(itemName);
             if (state == null || state != 4){
                 return false;
             }
-            String sql1 = """
-                    update record set state = 4,
-                    container_id = ?
-                    where item_name = ?
-                    """;
-            String sql2 = """
-                    update container set state = 1
-                    where code = ?
-                    """;
-            return SqlFactory.handleUpdate(sql1, id,  itemName) &&
-                    SqlFactory.handleUpdate(sql2, containerCode);
+            return mapper.updateRecordByContainer(id,itemName) && mapper.setContainerFilled(containerCode);
         } else {
             return false;
         }
     }
 
     @Override
-    @Update
     public boolean loadContainerToShip(LogInfo log, String shipName, String containerCode) {
         if (identifyCheck.test(log)) {
             role.run();
-            Integer shipState = MethodFactory.getShipState(shipName);
-            Integer containerState = MethodFactory.getContainerState(containerCode);
+            Integer shipState = mapper.getShipState(shipName);
+            Integer containerState = mapper.getContainerState(containerCode);
             if(shipState == null || shipState != 0){
                 return false;
             }
@@ -107,33 +101,22 @@ public class CompanyManagerService implements ICompanyManager {
                 return false;
             }
 
-            String sql1 = """
-                    update container set ship_id =
-                    (select s.id from ship s where s.name = ? and s.state = 0)
-                    where code = ? and state = 1
-                    """;
-            String sql2 = """
-                    update record set state = 5 where container_id = (select id from container where code = ?)
-                    and state = 4
-                    """;
-
-            return SqlFactory.handleUpdate(sql1, shipName, containerCode) &&
-                    SqlFactory.handleUpdate(sql2,containerCode);
+            return mapper.setContainerShip(shipName, containerCode) &&
+                    mapper.updateRecordContainer(containerCode);
         } else {
             return false;
         }
     }
 
     @Override
-    @Update
     public boolean shipStartSailing(LogInfo log, String shipName) {
         if (identifyCheck.test(log)) {
             role.run();
-            Integer shipState = MethodFactory.getShipState(shipName);
+            Integer shipState = mapper.getShipState(shipName);
             if (shipState == null || shipState == 1){
                 return false;
             }
-            if (!MethodFactory.checkLoaded(shipName)){
+            if (!mapper.checkLoaded(shipName)){
                 return false;
             }
             String sql1 = "update ship set state = 1 where name = ?";
@@ -153,22 +136,17 @@ public class CompanyManagerService implements ICompanyManager {
     }
 
     @Override
-    @Update
     public boolean unloadItem(LogInfo log, String itemName) {
         if (identifyCheck.test(log)) {
             role.run();
-            Integer itemState = MethodFactory.getItemState(itemName);
+            Integer itemState = mapper.getItemState(itemName);
             if (itemState == null || itemState != 6) {
                 return false;
             }
-            Integer containerId = MethodFactory.getContainerIdByRecord(itemName);
+            Integer containerId = mapper.getContainerIdByRecord(itemName);
             if (containerId == null){
                 return false;
             }
-            String sql1 = """
-                    update record set state = 7
-                    where item_name = ?
-                    """;
             String sql2 = """
                     update container set state = 0 where id = ?;
                     """;
@@ -176,7 +154,7 @@ public class CompanyManagerService implements ICompanyManager {
                     update ship set state = 0 where id = (select c.ship_id from container
                     c where c.id = ?);
                     """;
-            return SqlFactory.handleUpdate(sql1,  itemName) &&
+            return mapper.updateRecord(7,itemName) &&
                     SqlFactory.handleUpdate(sql2,containerId) &&
                     SqlFactory.handleUpdate(sql3, containerId);
         } else {
@@ -185,19 +163,14 @@ public class CompanyManagerService implements ICompanyManager {
     }
 
     @Override
-    @Update
     public boolean itemWaitForChecking(LogInfo log, String item) {
         if (identifyCheck.test(log)) {
             role.run();
-            Integer itemState = MethodFactory.getItemState(item);
+            Integer itemState = mapper.getItemState(item);
             if (itemState == null || itemState != 7) {
                 return false;
             }
-            String sql = """
-                    update record set state = 8
-                    where item_name = ?
-                    """;
-            return SqlFactory.handleUpdate(sql, item);
+            return mapper.updateRecord(8,item);
         } else {
             return false;
         }

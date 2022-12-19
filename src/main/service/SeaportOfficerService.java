@@ -2,11 +2,13 @@ package main.service;
 
 import main.interfaces.ISeaportOfficer;
 import main.interfaces.LogInfo;
-import main.utils.MethodFactory;
+import main.utils.DatabaseManipulationProxy;
+import main.utils.MethodInterFaces;
 import main.utils.SqlFactory;
 import main.utils.annotations.Multiple;
 import main.utils.annotations.Update;
 
+import java.lang.reflect.Proxy;
 import java.util.function.Predicate;
 
 /**
@@ -20,6 +22,12 @@ public class SeaportOfficerService implements ISeaportOfficer {
 
     private final Runnable role = () -> SqlFactory.setRole(LogInfo.StaffType.SeaportOfficer);
 
+    private final MethodInterFaces mapper = (MethodInterFaces) Proxy.newProxyInstance(
+            SeaportOfficerService.class.getClassLoader(),
+            new Class[]{MethodInterFaces.class},
+            new DatabaseManipulationProxy()
+    );
+    
     @Override
     @Multiple(sql = """
             select item_name
@@ -33,7 +41,7 @@ public class SeaportOfficerService implements ISeaportOfficer {
     public String[] getAllItemsAtPort(LogInfo log) {
         if (identifyCheck.test(log)) {
             role.run();
-            int cityId = MethodFactory.getCityId(log);
+            int cityId = mapper.getCityId(log.name());
             System.out.println(cityId);
             try {
                 return SqlFactory.query(
@@ -56,12 +64,12 @@ public class SeaportOfficerService implements ISeaportOfficer {
     public boolean setItemCheckState(LogInfo log, String itemName, boolean success) {
         if (identifyCheck.test(log)) {
             role.run();
-            if (!MethodFactory.checkItemExist(itemName)) {
+            if (!mapper.checkItemExist(itemName)) {
                 return false;
             }
-            Integer recordId = MethodFactory.getRecordId(itemName);
-            Integer staffId = MethodFactory.getStaffId(log.name());
-            Integer cityId = MethodFactory.getCityId(log);
+            Integer recordId = mapper.getRecordId(itemName);
+            Integer staffId = mapper.getStaffId(log.name());
+            Integer cityId = mapper.getCityId(log.name());
             if (recordId == null || staffId == null || cityId == null){
                 return false;
             }
@@ -72,7 +80,7 @@ public class SeaportOfficerService implements ISeaportOfficer {
             String sql2 = """
                     update undertake set staff_id = ?,city_id = ? where record_id = ? and type = ?
                     """;
-            Integer state = MethodFactory.getItemState(itemName);
+            Integer state = mapper.getItemState(itemName);
             if (state == null) {
                 return false;
             }else if(state == 3){

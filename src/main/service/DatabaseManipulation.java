@@ -1,9 +1,7 @@
 package main.service;
 
 import main.interfaces.*;
-import main.utils.ItemRecord;
-import main.utils.JdbcUtil;
-import main.utils.StaffRecord;
+import main.utils.*;
 
 
 import java.sql.*;
@@ -15,10 +13,10 @@ public class DatabaseManipulation implements IDatabaseManipulation {
 
     }
 
-    private final CompanyManagerService companyManagerService = new CompanyManagerService();
-    private final CourierService courierService = new CourierService();
-    private final SeaportOfficerService seaportOfficerService = new SeaportOfficerService();
-    private final SustcManagerService sustcManagerService = new SustcManagerService();
+    private ICompanyManager companyManagerService = new CompanyManagerService();
+    private ICourier courierService = new CourierService();
+    private ISeaportOfficer seaportOfficerService = new SeaportOfficerService();
+    private ISustcManager sustcManagerService = new SustcManagerService();
 
     private static final int MALE = 1;
     private static final int FEMALE = 0;
@@ -48,7 +46,7 @@ public class DatabaseManipulation implements IDatabaseManipulation {
         put("Courier", COURIER);
     }};
 
-    static final HashMap<String, Integer> itemState = new HashMap<>() {{
+    private static final HashMap<String, Integer> itemState = new HashMap<>() {{
         put("Start", 0);
         put("Picking-up", 1);
         put("To-Export Transporting", 2);
@@ -68,17 +66,16 @@ public class DatabaseManipulation implements IDatabaseManipulation {
         put("Import Check Fail", 13);
     }};
 
-    static final int BATCH_SIZE = 9961;
+    private static final int BATCH_SIZE = 9961;
 
-    HashMap<String, FileRecordWrapper> cityMap = new HashMap<>();
-    HashMap<String, FileRecordWrapper> companyMap = new HashMap<>();
-    HashMap<String, FileRecordWrapper> staffMap = new HashMap<>();
-    HashMap<String, FileRecordWrapper> shipMap = new HashMap<>();
-    HashMap<String, FileRecordWrapper> containerMap = new HashMap<>();
-    HashMap<String, FileRecordWrapper> recordMap = new HashMap<>();
+    private final HashMap<String, FileRecordWrapper> cityMap = new HashMap<>();
+    private final HashMap<String, FileRecordWrapper> companyMap = new HashMap<>();
+    private final HashMap<String, FileRecordWrapper> staffMap = new HashMap<>();
+    private final HashMap<String, FileRecordWrapper> shipMap = new HashMap<>();
+    private final HashMap<String, FileRecordWrapper> containerMap = new HashMap<>();
+    private final HashMap<String, FileRecordWrapper> recordMap = new HashMap<>();
 
     Connection connection;
-
 
 
     public DatabaseManipulation(String database, String root, String pass) {
@@ -124,6 +121,8 @@ public class DatabaseManipulation implements IDatabaseManipulation {
                         foreign key (city_id) references city(id),
                         foreign key (ship_id) references ship(id)
                     );
+                    create index container_ship_index
+                        on container (ship_id); 
                     """;
 
             String sql5 = """
@@ -169,6 +168,8 @@ public class DatabaseManipulation implements IDatabaseManipulation {
                         foreign key (record_id) references record(id),
                         foreign key (city_id) references city(id)
                     );
+                    create index undertake_record_id_index
+                        on undertake (record_id); 
                     """;
             connection.prepareStatement(sql1).execute();
             connection.prepareStatement(sql2).execute();
@@ -181,29 +182,11 @@ public class DatabaseManipulation implements IDatabaseManipulation {
 //            e.printStackTrace();
             try {
                 connection.prepareStatement("drop table undertake;").execute();
-            } catch (Exception ignored) {
-            }
-            try {
                 connection.prepareStatement("drop table record;").execute();
-            } catch (Exception ignored) {
-            }
-            try {
                 connection.prepareStatement("drop table container;").execute();
-            } catch (Exception ignored) {
-            }
-            try {
                 connection.prepareStatement("drop table ship;").execute();
-            } catch (Exception ignored) {
-            }
-            try {
                 connection.prepareStatement("drop table staff;").execute();
-            } catch (Exception ignored) {
-            }
-            try {
                 connection.prepareStatement("drop table city;").execute();
-            } catch (Exception ignored) {
-            }
-            try {
                 connection.prepareStatement("drop table company;").execute();
             } catch (Exception ignored) {
             }
@@ -279,15 +262,17 @@ public class DatabaseManipulation implements IDatabaseManipulation {
 
     private void putMap(HashMap map, String key, StaffRecord record) {
         if (key != null && key.length() != 0) {
-            if (!map.containsKey(key))
+            if (!map.containsKey(key)) {
                 map.put(key, new FileRecordWrapper(record));
+            }
         }
     }
 
     private void putMap(HashMap map, String key, ItemRecord record) {
         if (key != null && key.length() != 0) {
-            if (!map.containsKey(key))
+            if (!map.containsKey(key)) {
                 map.put(key, new FileRecordWrapper(record));
+            }
         }
     }
 

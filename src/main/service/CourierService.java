@@ -4,12 +4,11 @@ import main.interfaces.ICourier;
 import main.interfaces.ItemInfo;
 import main.interfaces.ItemState;
 import main.interfaces.LogInfo;
-import main.utils.MethodFactory;
+import main.utils.DatabaseManipulationProxy;
+import main.utils.MethodInterFaces;
 import main.utils.SqlFactory;
-import main.utils.annotations.Update;
 
-
-import java.sql.SQLException;
+import java.lang.reflect.Proxy;
 import java.util.Objects;
 import java.util.function.Predicate;
 
@@ -21,6 +20,11 @@ public class CourierService implements ICourier {
 
     private final Predicate<LogInfo> identifyCheck = (id) -> id.type() == LogInfo.StaffType.Courier;
     private final Runnable role = () -> SqlFactory.setRole(LogInfo.StaffType.Courier);
+    private final MethodInterFaces mapper = (MethodInterFaces) Proxy.newProxyInstance(
+            CourierService.class.getClassLoader(),
+            new Class[]{MethodInterFaces.class},
+            new DatabaseManipulationProxy()
+    );
 
     private boolean checkItem(ItemInfo item, LogInfo log) {
         return
@@ -31,104 +35,76 @@ public class CourierService implements ICourier {
                         item.export().officer() == null &&
                         item.delivery().courier() == null &&
                         item.state() == null &&
-                        Objects.equals(item.retrieval().city(), MethodFactory.getCity(log)) &&
-                        !MethodFactory.checkItemExist(item.name());
+                        Objects.equals(item.retrieval().city(), mapper.getCity(log.name())) &&
+                        !mapper.checkItemExist(item.name());
     }
 
     @Override
-    @Update
     public boolean newItem(LogInfo log, ItemInfo item) {
         if (identifyCheck.test(log)) {
             role.run();
             if (!checkItem(item, log)) {
                 return false;
             }
-            String sql = "insert into record(item_name, item_class, item_price, state, company_id) " +
-                    "values (?,?,?,?,?)";
-            String sql2 = "insert into undertake (record_id,staff_id,city_id,type) values(?,?,?,1) ";
-            return SqlFactory.handleUpdate(sql, item.name(), item.$class(), item.price(), 1, MethodFactory.getCompanyId(log))
-                    && SqlFactory.handleUpdate(sql2,
-                    MethodFactory.getRecordId(item.name()),
-                    MethodFactory.getStaffId(log.name()),
-                    MethodFactory.getCityId(log));
+            return mapper.addRecord(item.name(), item.$class(), item.price(), 1, mapper.getCompanyId(log.name()))
+                    && mapper.addUndertake(mapper.getRecordId(item.name()), mapper.getStaffId(log.name()), mapper.getCityId(log.name()), 1);
         } else {
             return false;
         }
     }
 
     @Override
-    @Update
     public boolean setItemState(LogInfo log, String name, ItemState s) {
         if (identifyCheck.test(log)) {
             role.run();
-            if (!MethodFactory.checkItemExist(name)) {
+            if (!mapper.checkItemExist(name)) {
                 return false;
             }
-            if (s == SqlFactory.mapState(MethodFactory.getItemState(name))) {
+            if (s == SqlFactory.mapState(mapper.getItemState(name))) {
                 return false;
             }
-            Integer itemState = MethodFactory.getItemState(name);
+            Integer itemState = mapper.getItemState(name);
             Integer nextState = SqlFactory.mapStateToInt(s);
-            if (itemState == null){
+            if (itemState == null) {
                 return false;
             }
-            if (nextState == null){
+            if (nextState == null) {
                 return false;
             }
-            if(nextState >= 4 && nextState <= 8) {
+            if (nextState >= 4 && nextState <= 8) {
                 return false;
             }
-            if(itemState >= 4 && itemState <= 8) {
+            if (itemState >= 4 && itemState <= 8) {
                 return false;
             }
-            if (MethodFactory.checkCourier(log, name,6) && itemState >= 9){
-                if (nextState == 9){
-                    if (itemState != 9){
+            if (mapper.checkCourier(name, 6, log.name()) && itemState >= 9) {
+                if (nextState == 9) {
+                    if (itemState != 9) {
                         return false;
                     }
-                }else if (nextState == 10){
-                    if (itemState != 9){
+                } else if (nextState == 10) {
+                    if (itemState != 9) {
                         return false;
                     }
-                }else if (nextState == 11){
-                    if (itemState != 10){
+                } else if (nextState == 11) {
+                    if (itemState != 10) {
                         return false;
                     }
                 }
-                String sql = """
-                        select (select name from staff where id = u.staff_id) from undertake u where u.type = 6 and
-                        u.record_id = (select id from record where item_name = ?)
-                        """;
-                try {
-                    String courierName = SqlFactory.handleSingleResult(
-                            SqlFactory.handleQuery(sql, name),
-                            r -> r.getString(1)
-                    );
-                    if (courierName == null){
-                        String sql2 = """
-                                update undertake set
-                                staff_id = (select id from staff where name = ?),
-                                city_id = (select city_id from staff where name = ?)
-                                where (type = 5 or type = 6) and record_id = (select id from record where item_name = ?)
-                                """;
-                        SqlFactory.handleUpdate(sql2,log.name(),log.name(),name);
-                    }else if(!courierName.equals(log.name())){
-                        return false;
-                    }
-                } catch (SQLException e) {
-                    e.printStackTrace();
-                }
-            }else if (MethodFactory.checkCourier(log, name,1) && itemState <= 2){
-                if (nextState > 3 || nextState - itemState != 1){
+                String courierName = mapper.getStaffNameByItem(name);
+                if (courierName == null) {
+                    mapper.updateUndertake(log.name(), log.name(), name);
+                } else if (!courierName.equals(log.name())) {
                     return false;
                 }
-            }else {
+            } else if (mapper.checkCourier(name, 1, log.name()) && itemState <= 2) {
+                if (nextState > 3 || nextState - itemState != 1) {
+                    return false;
+                }
+            } else {
                 return false;
             }
-            String sql = """
-                    update record set state = ? where item_name = ?
-                    """;
-            return SqlFactory.handleUpdate(sql,nextState,name);
+            return mapper.updateRecord(nextState, name);
         } else {
             return false;
         }

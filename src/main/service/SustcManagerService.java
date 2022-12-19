@@ -1,10 +1,13 @@
 package main.service;
 
 import main.interfaces.*;
+import main.utils.DatabaseManipulationProxy;
+import main.utils.MethodInterFaces;
 import main.utils.SqlFactory;
 import main.utils.SqlResult;
 import main.utils.annotations.Aggregated;
 
+import java.lang.reflect.Proxy;
 import java.sql.SQLException;
 import java.util.function.Function;
 import java.util.function.Predicate;
@@ -17,6 +20,12 @@ public class SustcManagerService implements ISustcManager {
     private final Predicate<LogInfo> identifyCheck = (id) -> id.type() == LogInfo.StaffType.SustcManager;
 
     private final Runnable role = () -> SqlFactory.setRole(LogInfo.StaffType.SustcManager);
+
+    private final MethodInterFaces mapper = (MethodInterFaces) Proxy.newProxyInstance(
+            SustcManagerService.class.getClassLoader(),
+            new Class[]{MethodInterFaces.class},
+            new DatabaseManipulationProxy()
+    );
 
     private int handleCount(String type) {
         String sql = String.format("select count(id) from %s where trim(name) != '' ", type);
@@ -52,20 +61,11 @@ public class SustcManagerService implements ISustcManager {
     }
 
     @Override
-    @Aggregated(sql = "select count(id) from staff where type = 4")
     public int getCourierCount(LogInfo log) {
         if (identifyCheck.test(log)) {
             role.run();
-            try {
-                return SqlFactory.query(
-                        this.getClass().getMethod("getCourierCount", LogInfo.class),
-                        r -> r.getInt(1),
-                        (Object) null
-                );
-            } catch (Exception e) {
-                e.printStackTrace();
-                return -1;
-            }
+            Integer res = mapper.getCourierCount();
+            return res == null ? -1 : res;
         } else {
             return -1;
         }
