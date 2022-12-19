@@ -6,17 +6,11 @@ import main.utils.annotations.Update;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 
 /**
  * @author yjt 动态代理
  */
 public class DatabaseManipulationProxy implements InvocationHandler {
-
-    private Object target;
-
-    public DatabaseManipulationProxy() {
-    }
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
@@ -42,17 +36,12 @@ public class DatabaseManipulationProxy implements InvocationHandler {
             System.out.println("No annotation found...");
         }
         try {
-            return method.invoke(target, args);
+            return method.invoke(proxy, args);
         } catch (Exception e) {
             System.out.println("Exception found!");
             System.out.println(e.getMessage());
             //do something ...
             return null;
         }
-    }
-
-
-    public Object newProxiedObj() {
-        return  Proxy.newProxyInstance(target.getClass().getClassLoader(), target.getClass().getInterfaces(), this);
     }
 }

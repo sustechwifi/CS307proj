@@ -100,7 +100,6 @@ public class CompanyManagerService implements ICompanyManager {
             if (containerState == null || containerState != 1){
                 return false;
             }
-
             return mapper.setContainerShip(shipName, containerCode) &&
                     mapper.updateRecordContainer(containerCode);
         } else {
