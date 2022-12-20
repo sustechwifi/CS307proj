@@ -31,10 +31,14 @@ public class CourierService implements ICourier {
                 item.retrieval().courier() == null &&
                         item.name() != null &&
                         item.$class() != null &&
+                        item.price() > 0 &&
+                        !item.export().city().equals(item.$import().city()) &&
                         item.$import().officer() == null &&
                         item.export().officer() == null &&
                         item.delivery().courier() == null &&
                         item.state() == null &&
+                        item.export().tax() != 0 &&
+                        item.$import().tax() != 0 &&
                         Objects.equals(item.retrieval().city(), mapper.getCity(log.name())) &&
                         !mapper.checkItemExist(item.name());
     }
