@@ -18,9 +18,7 @@ import java.util.stream.Collectors;
  * impl for companyManager
  */
 public class CompanyManagerService implements ICompanyManager {
-
     private final Predicate<LogInfo> identifyCheck = (id) -> id.type() == LogInfo.StaffType.CompanyManager;
-
     private final Runnable role = () -> SqlFactory.setRole(LogInfo.StaffType.CompanyManager);
 
     private final MethodInterFaces mapper = (MethodInterFaces) Proxy.newProxyInstance(
