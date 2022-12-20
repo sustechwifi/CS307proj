@@ -73,10 +73,6 @@ public class SeaportOfficerService implements ISeaportOfficer {
             if (recordId == null || staffId == null || cityId == null){
                 return false;
             }
-            String sql1 = """
-                    update record set state = %d where id = ?
-                    """;
-
             String sql2 = """
                     update undertake set staff_id = ?,city_id = ? where record_id = ? and type = ?
                     """;
@@ -84,10 +80,10 @@ public class SeaportOfficerService implements ISeaportOfficer {
             if (state == null) {
                 return false;
             }else if(state == 3){
-                SqlFactory.handleUpdate(String.format(sql1, success ? 4 : 12), recordId);
+                mapper.updateRecord(success ? 4 : 12,itemName);
                 SqlFactory.handleUpdate(sql2,staffId,cityId,recordId,3);
             }else if(state == 8){
-                SqlFactory.handleUpdate(String.format(sql1, success ? 9 : 13), recordId);
+                mapper.updateRecord(success ? 9 : 13,itemName);
                 SqlFactory.handleUpdate(sql2,staffId,recordId,4);
             }else {
                 return false;

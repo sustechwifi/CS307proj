@@ -67,6 +67,9 @@ public class CourierService implements ICourier {
             if (s == SqlFactory.mapState(mapper.getItemState(name))) {
                 return false;
             }
+            if (!mapper.checkItemCompanyByStaffName(name, log.name())){
+                return false;
+            }
             Integer itemState = mapper.getItemState(name);
             Integer nextState = SqlFactory.mapStateToInt(s);
             if (itemState == null) {

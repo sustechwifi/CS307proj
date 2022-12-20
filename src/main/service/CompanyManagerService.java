@@ -118,17 +118,11 @@ public class CompanyManagerService implements ICompanyManager {
             if (!mapper.checkLoaded(shipName)){
                 return false;
             }
-            String sql1 = "update ship set state = 1 where name = ?";
-            String sql2 = """
-                    update record set state = 6
-                    where state = 5 and container_id = (
-                        select c.id from container c where c.ship_id = (
-                            select s.id from ship s where s.name = ?
-                        )
-                    )
-                    """;
-            return SqlFactory.handleUpdate(sql1, shipName) &&
-                    SqlFactory.handleUpdate(sql2,  shipName);
+            if (!mapper.checkShipCompanyByStaffName(shipName, log.name())){
+                return false;
+            }
+            return mapper.setShipSailing(shipName) &&
+                    mapper.setItemStateSailing(shipName);
         } else {
             return false;
         }
@@ -146,16 +140,11 @@ public class CompanyManagerService implements ICompanyManager {
             if (containerId == null){
                 return false;
             }
-            String sql2 = """
-                    update container set state = 0 where id = ?;
-                    """;
-            String sql3 = """
-                    update ship set state = 0 where id = (select c.ship_id from container
-                    c where c.id = ?);
-                    """;
+            if (mapper.shipFreed(containerId)){
+                mapper.setShipFreeByContainerId(containerId);
+            }
             return mapper.updateRecord(7,itemName) &&
-                    SqlFactory.handleUpdate(sql2,containerId) &&
-                    SqlFactory.handleUpdate(sql3, containerId);
+                    mapper.setContainerEmptyById(containerId);
         } else {
             return false;
         }

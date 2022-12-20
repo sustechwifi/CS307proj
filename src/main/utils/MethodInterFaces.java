@@ -64,6 +64,24 @@ public interface MethodInterFaces {
             """)
     String getStaffNameByItem(String name);
 
+    @Aggregated(sql = """
+    select (
+    (select company_id from record where item_name = ?)
+    =
+    (select company_id from staff where name = ?)
+    )
+    """)
+    boolean checkItemCompanyByStaffName(String itemName,String name);
+
+    @Aggregated(sql = """
+    select (
+    (select company_id from ship where name = ?)
+    =
+    (select company_id from staff where name = ?)
+    )
+    """)
+    boolean checkShipCompanyByStaffName(String shipName,String name);
+
     @Update(sql = "insert into record(item_name, item_class, item_price, state, company_id) values (?,?,?,?,?)")
     boolean addRecord(String item_name,String item_class,double item_price,int state,int company_id);
 
@@ -103,9 +121,41 @@ public interface MethodInterFaces {
     boolean setContainerShip(String shipName, String containerCode);
 
     @Update(sql = """
-            update record set state = 5 where container_id = (select id from container where code = ?)
-                                and state = 4
+            update record set state = 5 where
+            container_id = (select id from container where code = ?) and state = 4
             """)
     boolean updateRecordContainer(String containerCode);
+
+    @Aggregated(sql = """
+            select ((select count(c1.id) from container c1
+            where c1.state = 1 and c1.ship_id = (select c2.ship_id from container c2 where c2.id = ?)) = 0);
+            """)
+    boolean shipFreed(Integer containerId);
+
+    @Update(sql = """
+            update ship set state = 1 where name = ?;
+            """)
+    boolean setShipSailing(String shipName);
+
+    @Update(sql = """
+            update record set state = 6
+                    where state = 5 and container_id = (
+                        select c.id from container c where c.ship_id = (
+                            select s.id from ship s where s.name = ?
+                        )
+                    )
+            """)
+    boolean setItemStateSailing(String shipName);
+
+    @Update(sql = """
+            update container set state = 0 where id = ?;
+            """)
+    boolean setContainerEmptyById(Integer containerId);
+
+    @Update(sql = """
+            update ship set state = 0 where id = (select c.ship_id from container
+                    c where c.id = ?);
+            """)
+    boolean setShipFreeByContainerId(Integer containerId);
 
 }
