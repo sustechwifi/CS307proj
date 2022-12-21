@@ -118,8 +118,8 @@ Actually, we do have expanded the tables mentioned above considering there are o
 
 In the designing period, we considered relationships between ship and city(Dock), as well as container and city(Stay)
 since the description of API-18(unloadItem) mentioned that this API **IMPLIES** that 「*the corresponding container is
-being unloaded to "Import City" of the item and the ship is currently docking at "Import City"*」. Yet the time
-attributes revealing chronological event sequences are missing in the .csv file. Hence we can only let this relationship
+being unloaded to "Import City" of the item and the ship is currently docking at `Import City`. Yet the time
+attributes revealing chronological event sequences are missing in the .csv file. Hence, we can only let this relationship
 lies idle.
 
 ### §Permission Granting
@@ -138,17 +138,13 @@ create role seaportofficer;
 create role courier;
 create role seaportofficer;
 
-ALTER
-DEFAULT PRIVILEGES IN SCHEMA public
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
 GRANT ALL PRIVILEGES ON SEQUENCES TO sustcmanager;
-ALTER
-DEFAULT PRIVILEGES IN SCHEMA public
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
 GRANT ALL PRIVILEGES ON SEQUENCES TO seaportofficer;
-ALTER
-DEFAULT PRIVILEGES IN SCHEMA public
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
 GRANT ALL PRIVILEGES ON SEQUENCES TO courier;
-ALTER
-DEFAULT PRIVILEGES IN SCHEMA public
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
 GRANT ALL PRIVILEGES ON SEQUENCES TO seaportofficer;
 
 grant select on sustc2.public.undertake,city,company,container,staff,ship,record to sustcmanager,courier,seaportofficer,companymanager;
@@ -164,14 +160,11 @@ grant update on record,container,ship to companymanager;
 
 --\Front-end Layer and Controller Layer (Front-end and Back-end Checking)--\
 
-The user logs in via the random `token` distributed by UUID. Then the front will limit the information the user can
-access, while the back-end will save the log in information and call the constructor only once. Meanwhile, the back-end
-will switch to the corresponding role.
+The user logs in via the random `token` distributed by UUID. Then the front will limit the information the user can access, while the back-end will save the log in information and call the constructor only once. Meanwhile, the back-end will switch to the corresponding role.
 
-When jumping to other pages, the front-end will send a request together with the token. Then back-end will check the
-validation of the token and decide whether accept the request or not.
+When jumping to other pages, the front-end will send a request together with the token. Then back-end will check the validation of the token and decide whether accept the request or not.
 
-When sending a request, the client information carried will be wrapped into a `LogInfo` class.
+When sending a request, the client information carried will be wrapped into  `LogInfo` class.
 
 --\Service Layer and DAO Layer (API Checking)--\
 
@@ -213,7 +206,6 @@ public static void setRole(LogInfo.StaffType type){
             }else if(type == LogInfo.StaffType.Courier){
                 ps = con.prepareStatement(String.format(sql,"courier"));
             }
-            //ps = con.prepareStatement(String.format(sql, "postgres"));
             ps.executeUpdate();
             System.out.println("curr change:"+getCurrDatabaseUser());
         } catch (SQLException e) {
@@ -242,7 +234,7 @@ As for detailed basic, supplemental and advanced SQLs, please refer to the appen
 
 Use login `token` to check and store staff id.
 
-Both fore-end and back-end servers will check whether the request is valid.
+Both front-end and back-end servers will check whether the request is valid.
 
 ```java
 @PostMapping("/login")
@@ -307,8 +299,7 @@ Use personal login token to invoke method. **If the user has not login/ has inva
     + No need to create or load PrepareStatement or deal with resultSet manually.
 
 ---
-+ §DatabaseManipulationProxy.java (Dynamic proxy and resolve annotations that auto-execute sqls and handle exceptions
-  behind)
++ §DatabaseManipulationProxy.java (Dynamic proxy and resolve annotations that auto-execute sqls and handle exceptions behind)
 
 Codes like:
 
@@ -357,8 +348,7 @@ Construction like:
 
 ![](C:\Users\25874\Desktop\md\imgs\图片3.png)
 
-+ §MethodInterFaces.java (Common methods defined in interface that using self-defined annotations to configure sql and
-  args)
++ §MethodInterFaces.java (Common methods defined in interface that using self-defined annotations to configure sql and args)
 
 Codes like:
 
@@ -466,10 +456,10 @@ public class Main {
 ![](C:\Users\25874\Desktop\md\imgs\图片7.png)
 
 + §Seaport officer APIs: Items
++ 
+![](C:\Users\25874\Desktop\md\imgs\图片8.png)
 
-
-
-+ ![](C:\Users\25874\Desktop\md\imgs\图片8.png)§Company manager APIs: Tax rate
++ §Company manager APIs: Tax rate
 
 ![](C:\Users\25874\Desktop\md\imgs\图片9.png)
 
@@ -482,10 +472,7 @@ public class Main {
 
 The implementation of IDatabaseManipulation interface and related APIs are encapsulated into `CS307proj.jar` file.
 
-
-
-Back-end server only parse and deal with the request that sent from the front-end. Three classes are included: `Spring
-boot Application`, `REST API controller` and `JSON object wrapper`.
+Back-end server only parse and deal with the request that sent from the front-end. Three classes are included: `Spring boot Application`, `REST API controller` and `JSON object wrapper`.
 
 
 + §Spring Boot Application:
@@ -682,9 +669,7 @@ where u.type = ? and r.item_class = ? and u.city_id =
 ```sql
 select id from container where state = 0 and code = ?;
 
-update record set state = 4,
-container_id = ?
-where item_name = ?;
+update record set state = 4, container_id = ? where item_name = ?;
 
 update container set state = 1 where code = ?;
 ```
@@ -693,8 +678,7 @@ update container set state = 1 where code = ?;
 ```sql
 select state from ship where name = ?;
 
-update container set ship_id =
-(select s.id from ship s where s.name = ? and s.state = 0)
+update container set ship_id = (select s.id from ship s where s.name = ? and s.state = 0)
 where code = ? and state = 1;
 
 update record set state = 5 where container_id = (select id from container where code = ?) and state = 4;
@@ -717,8 +701,7 @@ select container_id from record where item_name = ?;
 
 update container set state = 0 where id = ?;
 
-update ship set state = 0 where id = (select c.ship_id from container
-c where c.id = ?);
+update ship set state = 0 where id = (select c.ship_id from container c where c.id = ?);
 
 update record set state = ? where item_name = ?;
 ```
@@ -735,9 +718,7 @@ update record set state = ? where item_name = ?;
 select item_name
 from record
 where id in
-(select record_id from undertake
-where (city_id = ? and (type = 3 or type = 4) and staff_id is null)
-)
+(select record_id from undertake where (city_id = ? and (type = 3 or type = 4) and staff_id is null))
 and (state = 3 or state = 8);
 ```
 
@@ -788,8 +769,7 @@ select container_id from record where item_name = ?
 + §getStaffNameByItem
 ```sql
 select (select name from staff where id = u.staff_id) from undertake u
-where u.type = 6 and
-u.record_id = (select id from record where item_name = ?);
+where u.type = 6 and u.record_id = (select id from record where item_name = ?);
 ```
 
 
@@ -898,11 +878,9 @@ IDatabaseManipulation implement classes with only JDBC:
 + Helpful indices are added to speed up the SQL execution.
 
 ```sql
-create index container_ship_index
-    on container (ship_id);
+create index container_ship_index on container (ship_id);
 
-create index undertake_record_id_index
-    on undertake (record_id);
+create index undertake_record_id_index on undertake (record_id);
 ```
 
 + §Runtime Environment
