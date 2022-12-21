@@ -44,20 +44,13 @@ Figure 1.2 Database Structure
 
 All tables are established abiding by the E-R diagram above, yet trivial modifications are applied.
 
-In the database, every table in the database use an "**id**" attribute that can automatically increases as its primary
-key, and connect with other tables by foreign keys formatted "***table name*\_id**". Hence that query format can be
-unified.
+In the database, every table in the database use an "**id**" attribute that can automatically increases as its primary key, and connect with other tables by foreign keys formatted "***table name*\_id**". Hence that query format can be unified.
 
-The database should be established from tables that don't rely on any other table. Then continue establishment in
-accordance to the reliance relationship.
+The database should be established from tables that don't rely on any other table. Then continue establishment in accordance to the reliance relationship.
 
-For this concrete database, entities "**city**", and "**company**" do not have any reliance, so that they should first
-be established. Then entities "**ship**" and "**staff**" are next. Then, "**container**". And the final entity "**
-record**" is the last entity to be imported. Furthermore, we used a m-n-p relationship "**undertake**" to link
-tables "**city**", "**staff**" and "**record**".
+For this concrete database, entities "**city**", and "**company**" do not have any reliance, so that they should first be established. Then entities "**ship**" and "**staff**" are next. Then, "**container**". And the final entity "**record**" is the last entity to be imported. Furthermore, we used a m-n-p relationship "**undertake**" to link tables "**city**", "**staff**" and "**record**".
 
-**P.S.**: It should be easy to read and understand the meaning of each attribute, so there is no need to explain further
-in most cases.
+**P.S.**: It should be easy to read and understand the meaning of each attribute, so there is no need to explain further in most cases.
 
 + §City
 
@@ -69,29 +62,23 @@ No reliance. Distinguished by its not null "**name**".
 
 + §Ship
 
-Subject to "**company**" (1:n) and "**city**" (1:n). Distinguished by its not null "**name**", and has its "**state**"
-revealing whether it is shipping(1) or not(0).
+Subject to "**company**" (1:n) and "**city**" (1:n). Distinguished by its not null "**name**", and has its "**state**" revealing whether it is shipping(1) or not(0).
 
 + §Container
 
-Subject to "**ship**" (1:n) and "**city**" (1:n). Distinguished by its not null "**code**". Has common attribute "**
-type**", as well as "**state**" revealing whether it is shipping(2), waiting for shipping(1) or not(0).
+Subject to "**ship**" (1:n) and "**city**" (1:n). Distinguished by its not null "**code**". Has common attribute "**type**", as well as "**state**" revealing whether it is shipping(2), waiting for shipping(1) or not(0).
 
 + §Staff
 
-Subject to "**company**" (1:n, optional) and "**city**" (1:n, optional, this attribute is established for convenience).
-Distinguished by its not null "**name**". Has common attributes "**birth_year**", "**gender**", "**password**" and "**
-phone_number**".
+Subject to "**company**" (1:n, optional) and "**city**" (1:n, optional, this attribute is established for convenience). Distinguished by its not null "**name**". Has common attributes "**birth_year**", "**gender**", "**password**" and "**phone_number**".
 
 For **gender**, integer 1 means MALE and 0 means FEMALE.
 
-Different type of staffs are distinguished by its attribute "**type**". 1 for *SUSTC Department Manager*, 2 for *Company
-Manager*, 3 for *Seaport Officer* and 4 for *Courier*.
+Different type of staffs are distinguished by its attribute "**type**". 1 for *SUSTC Department Manager*, 2 for *Company Manager*, 3 for *Seaport Officer* and 4 for *Courier*.
 
 + §Record
 
-Subject to "**company**" (1:n), "**container**" (1:n), "**city**" (m:n),"**courier**" (m:n) and "**ship**" (1:n),
-Distinguished by its not null "**item_name**". Have common attributes "**item_class**", "**item_price**" and "**state**"
+Subject to "**company**" (1:n), "**container**" (1:n), "**city**" (m:n),"**courier**" (m:n) and "**ship**" (1:n), Distinguished by its not null "**item_name**". Have common attributes "**item_class**", "**item_price**" and "**state**"
 .
 
 The item is not specially separated into a table because it is claimed not necessary in the project requirement.
@@ -101,26 +88,17 @@ The item is not specially separated into a table because it is claimed not neces
 Embodiment of the m:n:p relationship of "**city**", "**staff**" and "**record**". Distinguished by its "**city_id**"
 , "**staff_id**", "**record_id**" and "**type**".
 
-There are 4 **type**s in total: 1 for RETRIEVAL, 2 for EXPORT, 3 for EXPORT CHECKING, 4 for IMPORT CHECKING, 5 for
-IMPORT and 6 for DELIVERY. For types 3 and 4, it has extra attributes "**tax**", and their corresponding staffs are
-seaport officers (while others correspond to couriers).
+There are 4 **type**s in total: 1 for RETRIEVAL, 2 for EXPORT, 3 for EXPORT CHECKING, 4 for IMPORT CHECKING, 5 for IMPORT and 6 for DELIVERY. For types 3 and 4, it has extra attributes "**tax**", and their corresponding staffs are seaport officers (while others correspond to couriers).
 
 + §Ability of Expansion
 
-The database can easily expand when requirement is changed. For example, if there are more cities that item went
-through, we can simply add a new record to table **undertake**. In the case of extra shipment process is added, we can
-define **type** = 7, 8, \... to describe the new process. In this example, there is no need to change the structure of
-the database when requirement is increased, so that the database has good ability of expansion.
+The database can easily expand when requirement is changed. For example, if there are more cities that item went through, we can simply add a new record to table **undertake**. In the case of extra shipment process is added, we can define **type** = 7, 8, \... to describe the new process. In this example, there is no need to change the structure of the database when requirement is increased, so that the database has good ability of expansion.
 
 Actually, we do have expanded the tables mentioned above considering there are only 4 types in project I.
 
 + §P.S.
 
-In the designing period, we considered relationships between ship and city(Dock), as well as container and city(Stay)
-since the description of API-18(unloadItem) mentioned that this API **IMPLIES** that 「*the corresponding container is
-being unloaded to "Import City" of the item and the ship is currently docking at `Import City`. Yet the time
-attributes revealing chronological event sequences are missing in the .csv file. Hence, we can only let this relationship
-lies idle.
+In the designing period, we considered relationships between ship and city(Dock), as well as container and city(Stay) since the description of API-18(unloadItem) mentioned that this API **IMPLIES** that 「*the corresponding container is being unloaded to "Import City" of the item and the ship is currently docking at `Import City`. Yet the time attributes revealing chronological event sequences are missing in the .csv file. Hence, we can only let this relationship lies idle.
 
 ### §Permission Granting
 
@@ -472,8 +450,9 @@ public class Main {
 
 The implementation of IDatabaseManipulation interface and related APIs are encapsulated into `CS307proj.jar` file.
 
-Back-end server only parse and deal with the request that sent from the front-end. Three classes are included: `Spring boot Application`, `REST API controller` and `JSON object wrapper`.
+<img src="img.png" alt="img.png" style="zoom:50%;" />
 
+Back-end server only parse and deal with the request that sent from the front-end. Three classes are included: `Spring boot Application`, `REST API controller` and `JSON object wrapper`.
 
 + §Spring Boot Application:
 
@@ -544,19 +523,7 @@ public class APIController {
           logInfo: JSON.stringify(this.sustcManager),
           name: this.api7.name
         }
-      }).then(res => {
-        if (res.code === 0) {
-          this.$message({
-            type: 'success',
-            message: res.data
-          })
-        } else {
-          this.$message({
-            type: 'error',
-            message: res.data
-          })
-        }
-      })
+      }).then(res => {...})
     },
 ```
 
@@ -688,11 +655,8 @@ update record set state = 5 where container_id = (select id from container where
 ```sql
 update ship set state = 1 where name = ?;
 
-update record set state = 6
-where state = 5 and container_id = (
-select c.id from container c where c.ship_id = (
-select s.id from ship s where s.name = ?
-)
+update record set state = 6 where state = 5 and container_id = (
+    select c.id from container c where c.ship_id = (select s.id from ship s where s.name = ?)
 );
 ```
 + §unloadItem
@@ -715,8 +679,7 @@ update record set state = ? where item_name = ?;
 
 + §getAllItemsAtPort
 ```sql
-select item_name
-from record
+select item_name from record
 where id in
 (select record_id from undertake where (city_id = ? and (type = 3 or type = 4) and staff_id is null))
 and (state = 3 or state = 8);
@@ -807,7 +770,7 @@ select state from container where code = ?;
 
 + §checkLoaded
 ```sql
-select count(c.id) from container c where c.ship_id =\
+select count(c.id) from container c where c.ship_id = 
 (select s.id from ship s where s.name = ?);
 ```
 
