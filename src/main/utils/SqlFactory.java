@@ -210,7 +210,7 @@ public class SqlFactory {
             }else if(type == LogInfo.StaffType.Courier){
                 ps = con.prepareStatement(String.format(sql,"courier"));
             }
-            //ps = con.prepareStatement(String.format(sql, "postgres"));
+            ps = con.prepareStatement(String.format(sql, "postgres"));
             ps.executeUpdate();
             System.out.println("curr change:"+getCurrDatabaseUser());
         } catch (SQLException e) {
